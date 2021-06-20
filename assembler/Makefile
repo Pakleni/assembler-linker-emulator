@@ -7,13 +7,13 @@ parser:
 	bison src/parser.y
 
 all:
-	make parser
-	make lexer
+	$(MAKE) parser
+	$(MAKE) lexer
 	gcc $(SRCS) -o out/parser
 
 test:
-	make clean
-	make all
+	$(MAKE) clean
+	$(MAKE) all
 	cat tests/test.s | ./out/parser
 
 clean:

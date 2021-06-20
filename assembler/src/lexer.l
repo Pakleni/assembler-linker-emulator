@@ -12,7 +12,7 @@ HEX                 0[Xx][0-9A-Fa-f]+
 DEC                 [0-9]+
 IDENT               [A-Za-z_][A-Za-z0-9_]*
 LABEL               {IDENT}":"
-DIRECTIVE           .[a-z]*
+DIRECTIVE           "."[a-z]*
 
 /* rules */
 %%
@@ -34,14 +34,12 @@ DIRECTIVE           .[a-z]*
                         return TOKEN_DIRECTIVE;
                     }
 {BLANK}             {  }
-.+                  { error(); }
+.                   {
+                        return yyerror("syntax error");;
+                    }
 %%
 
 yywrap() {}
-
-void error() {
-    yyerror("error\n");
-}
 
 int yyerror(const char* msg)
 {
