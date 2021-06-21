@@ -1,5 +1,7 @@
 %{
   #include <cstdio>
+  #include "../inc/assembler.hpp"
+  
   int yylex(void);
   void yyerror(const char*);
 %}
