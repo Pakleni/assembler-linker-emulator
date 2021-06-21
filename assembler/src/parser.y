@@ -14,10 +14,11 @@
 
 
 %union {
-	int         num;
-  char *      directive;
-	char *      label;
-	char *      ident;
+	int             num;
+  char *          directive;
+	char *          label;
+	char *          ident;
+  struct IdentList *identList;
 }
 
 %token              TOKEN_COMMA
@@ -32,6 +33,7 @@
 %token<num>         TOKEN_NUM
 %token<ident>       TOKEN_IDENT
 
+%type <identList> identList;
 
 %%
 
@@ -47,14 +49,14 @@ instr
   ;
 
 directive
-  : TOKEN_GLOBAL symlist
-  { Assembler::getInstance().parseGlobal(); }
-  | TOKEN_EXTERN symlist
-  { Assembler::getInstance().parseExtern(); }
+  : TOKEN_GLOBAL identList
+  { Assembler::getInstance().parseGlobal($2); }
+  | TOKEN_EXTERN identList
+  { Assembler::getInstance().parseExtern($2); }
   | TOKEN_SECTION TOKEN_IDENT
   { Assembler::getInstance().parseSection(string($2)); }
-  | TOKEN_WORD symlist
-  { Assembler::getInstance().parseWord(); }
+  | TOKEN_WORD identList
+  { Assembler::getInstance().parseWord($2); }
   | TOKEN_WORD TOKEN_NUM
   { Assembler::getInstance().parseWord($2); }
   | TOKEN_SKIP TOKEN_NUM
@@ -65,8 +67,10 @@ directive
   { Assembler::getInstance().parseEnd(); YYACCEPT; }
   ;
 
-symlist
+identList
   : TOKEN_IDENT
-  | TOKEN_IDENT TOKEN_COMMA symlist
+  { $$ = new IdentList(string($1)); }
+  | TOKEN_IDENT TOKEN_COMMA identList
+  { $$ = new IdentList(string($1), $3); }
   ;
 %%

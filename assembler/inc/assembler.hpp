@@ -5,17 +5,17 @@
 class SymTabEntry;
 class RelEntry;
 class DataEntry;
+struct IdentList;
 
 class Assembler
 {
 private:
     Assembler(){};
 
-
 public:
     ~Assembler();
-    Assembler(Assembler const&) = delete;
-    void operator=(Assembler const&) = delete;
+    Assembler(Assembler const &) = delete;
+    void operator=(Assembler const &) = delete;
     static Assembler &getInstance()
     {
         static Assembler instance;
@@ -36,10 +36,10 @@ public:
     //add symbol to symtab
     SymTabEntry *addSymbol(std::string label);
     //functions to be called while parsing
-    void parseGlobal(); //symlist
-    void parseExtern(); //symlist
+    void parseGlobal(IdentList *list);
+    void parseExtern(IdentList *list);
     void parseSection(std::string name);
-    void parseWord(); //symlist
+    void parseWord(IdentList *list);
     void parseWord(int literal);
     void parseSkip(int literal);
     void parseEqu(std::string ident, int literal);
@@ -85,4 +85,14 @@ public:
     int section;
     int offset;
     int data;
+};
+
+struct IdentList
+{
+    IdentList(std::string _val) : val(_val){};
+    IdentList(std::string _val, IdentList *_next) : val(_val), next(_next){};
+    ~IdentList() { delete next; }
+
+    std::string val;
+    IdentList *next = nullptr;
 };

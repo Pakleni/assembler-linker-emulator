@@ -20,11 +20,28 @@ SymTabEntry * Assembler::addSymbol(string label)
     return SymTab.back();
 }
 
-void Assembler::parseGlobal() {
+void Assembler::parseGlobal(IdentList* list) {
+    if (firstPass) {
+        cout << "I GLOB" << endl;
 
+        delete list;
+    }
+    else {
+        cout << "II GLOB" << endl;
+
+        IdentList *curr = list;
+
+        do {
+            cout << "\t\tname: " << curr->val << endl;
+            curr = curr->next;
+        }
+        while (curr);
+
+        delete list;
+    }
 }
 
-void Assembler::parseExtern() {
+void Assembler::parseExtern(IdentList* list) {
     
 }
 
@@ -46,7 +63,7 @@ void Assembler::parseSection(string name)
     }
 }
 
-void Assembler::parseWord()
+void Assembler::parseWord(IdentList* list)
 {
     if (firstPass)
     {

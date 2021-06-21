@@ -1,3 +1,5 @@
+.global a, b, c ,d ,e
+
 .section kme
 
 #comment
