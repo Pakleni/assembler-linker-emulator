@@ -1,12 +1,12 @@
 %{
-  #include "lexer.h"
-  #include <stdio.h>
+  #include <cstdio>
   int yylex(void);
+  void yyerror(const char*);
 %}
 
 
-%output   "out/parser.c"
-%defines  "out/parser.h"
+%output   "out/parser.cpp"
+%defines  "out/parser.hpp"
 
 
 %union {
@@ -36,8 +36,3 @@ instr
   ;
 
 %%
-
-int main(int argc, char* argv[])
-{
-	yyparse();
-}

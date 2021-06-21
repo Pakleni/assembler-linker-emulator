@@ -1,4 +1,4 @@
-SRCS = out/parser.c out/lexer.c
+SRCS = src/assembler.cpp out/parser.cpp out/lexer.cpp
 
 lexer:
 	flex src/lexer.l
@@ -9,12 +9,12 @@ parser:
 all:
 	$(MAKE) parser
 	$(MAKE) lexer
-	gcc $(SRCS) -o out/parser
+	g++ $(SRCS) -o out/assembler
 
 test:
 	$(MAKE) clean
 	$(MAKE) all
-	cat tests/test.s | ./out/parser
+	./out/assembler -o out/test.o tests/test.s
 
 clean:
 	rm -f out/*

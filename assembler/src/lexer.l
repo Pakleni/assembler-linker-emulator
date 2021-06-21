@@ -1,10 +1,10 @@
 %{
     /* C */
-    #include "../out/parser.h"
-    void error();
+    #include "../out/parser.hpp"
+    int yyerror(const char*);
 %}
 
-%option outfile="out/lexer.c" header-file="out/lexer.h"
+%option outfile="out/lexer.cpp" header-file="out/lexer.hpp"
 
 BLANK               [ \r\n\t]*
 COMMENT             "#"[^\n\r]*
@@ -39,7 +39,7 @@ DIRECTIVE           "."[a-z]*
                     }
 %%
 
-yywrap() {}
+int yywrap() { return 0; }
 
 int yyerror(const char* msg)
 {
