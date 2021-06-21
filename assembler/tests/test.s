@@ -1,8 +1,9 @@
-.directive
+.section kme
 
 #comment
 
- labelica: 32123
-211 0x48fc
+.equ kmecim, 69
 
-ne postoji ovo cudop
+labelica: .skip 3
+
+.end

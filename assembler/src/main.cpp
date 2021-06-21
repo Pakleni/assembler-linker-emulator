@@ -20,7 +20,8 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     };
 
-    secondPass();
+    fclose(stdin);
+    freopen(argv[argc-1], "r", stdin);
 
     if (yyparse()) {
         return EXIT_FAILURE;

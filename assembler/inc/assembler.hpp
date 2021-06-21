@@ -2,6 +2,51 @@
 #include <string>
 #include <vector>
 
+class SymTabEntry;
+class RelEntry;
+class DataEntry;
+
+class Assembler
+{
+private:
+    Assembler(){};
+
+
+public:
+    ~Assembler();
+    Assembler(Assembler const&) = delete;
+    void operator=(Assembler const&) = delete;
+    static Assembler &getInstance()
+    {
+        static Assembler instance;
+        return instance;
+    }
+
+    int locationCounter = 0;
+    int currentSection = -1;
+    bool firstPass = true;
+
+    std::vector<SymTabEntry *> SymTab;
+    std::vector<RelEntry *> Rel;
+    std::vector<DataEntry *> Data;
+    std::vector<std::string> Sections;
+
+    //change to second pass
+    void secondPass();
+    //add symbol to symtab
+    SymTabEntry *addSymbol(std::string label);
+    //functions to be called while parsing
+    void parseGlobal(); //symlist
+    void parseExtern(); //symlist
+    void parseSection(std::string name);
+    void parseWord(); //symlist
+    void parseWord(int literal);
+    void parseSkip(int literal);
+    void parseEqu(std::string ident, int literal);
+    void parseEnd();
+    void parseLabel(std::string ident);
+};
+
 class SymTabEntry
 {
 private:
@@ -12,9 +57,9 @@ public:
 
     std::string label;
     //dobija id trenutnog section-a
-    int section = currentSection;
+    int section = Assembler::getInstance().currentSection;
     //dobija trenutnu vrednost location counter-a
-    int offset = locationCounter;
+    int offset = Assembler::getInstance().locationCounter;
     //local u prvom prolazu
     bool isLocal = true;
 
@@ -34,21 +79,10 @@ class RelEntry
     RelTypes relType;
 };
 
-class TextEntry
+class DataEntry
 {
 public:
     int section;
     int offset;
     int data;
 };
-
-int locationCounter;
-int currentSection;
-bool firstPass;
-
-std::vector<SymTabEntry *> SymTab;
-std::vector<RelEntry *> Rel;
-std::vector<TextEntry *> Text;
-std::vector<std::string> Sections;
-
-void secondPass();

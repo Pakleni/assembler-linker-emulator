@@ -1,7 +1,9 @@
 %{
   #include <cstdio>
   #include "../inc/assembler.hpp"
-  
+
+  using namespace std;
+
   int yylex(void);
   void yyerror(const char*);
 %}
@@ -13,13 +15,23 @@
 
 %union {
 	int         num;
-	char       *directive;
-	char       *label;
+  char *      directive;
+	char *      label;
+	char *      ident;
 }
 
-%token <num>        TOKEN_NUM
-%token <directive>  TOKEN_DIRECTIVE
-%token <label>      TOKEN_LABEL
+%token              TOKEN_COMMA
+%token              TOKEN_COLON
+%token              TOKEN_GLOBAL
+%token              TOKEN_EXTERN
+%token              TOKEN_SECTION
+%token              TOKEN_WORD
+%token              TOKEN_SKIP
+%token              TOKEN_EQU
+%token              TOKEN_END
+%token<num>         TOKEN_NUM
+%token<ident>       TOKEN_IDENT
+
 
 %%
 
@@ -29,12 +41,32 @@ prog
   ;
 
 instr
-  : TOKEN_LABEL
-    { printf("LABEL\n"); }
-  | TOKEN_NUM
-    { printf("NUMBER: %d\n", yylval.num); }
-  | TOKEN_DIRECTIVE
-    { printf("DIRECTIVE\n"); }
+  : TOKEN_IDENT TOKEN_COLON
+  { Assembler::getInstance().parseLabel($1); }
+  | directive
   ;
 
+directive
+  : TOKEN_GLOBAL symlist
+  { Assembler::getInstance().parseGlobal(); }
+  | TOKEN_EXTERN symlist
+  { Assembler::getInstance().parseExtern(); }
+  | TOKEN_SECTION TOKEN_IDENT
+  { Assembler::getInstance().parseSection(string($2)); }
+  | TOKEN_WORD symlist
+  { Assembler::getInstance().parseWord(); }
+  | TOKEN_WORD TOKEN_NUM
+  { Assembler::getInstance().parseWord($2); }
+  | TOKEN_SKIP TOKEN_NUM
+  { Assembler::getInstance().parseSkip($2); }
+  | TOKEN_EQU TOKEN_IDENT TOKEN_COMMA TOKEN_NUM
+  { Assembler::getInstance().parseEqu(string($2), $4); }
+  | TOKEN_END
+  { Assembler::getInstance().parseEnd(); YYACCEPT; }
+  ;
+
+symlist
+  : TOKEN_IDENT
+  | TOKEN_IDENT TOKEN_COMMA symlist
+  ;
 %%

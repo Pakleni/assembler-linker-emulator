@@ -1,4 +1,4 @@
-SRCS = src/main.cpp out/parser.cpp out/lexer.cpp
+SRCS = src/main.cpp out/parser.cpp out/lexer.cpp src/assembler.cpp
 
 lexer:
 	flex src/lexer.l

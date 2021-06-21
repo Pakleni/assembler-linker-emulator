@@ -1,6 +1,10 @@
 %{
     /* C */
     #include "../out/parser.hpp"
+    #include <string>
+
+    using namespace std;
+
     int yyerror(const char*);
 %}
 
@@ -11,8 +15,6 @@ COMMENT             "#"[^\n\r]*
 HEX                 0[Xx][0-9A-Fa-f]+
 DEC                 [0-9]+
 IDENT               [A-Za-z_][A-Za-z0-9_]*
-LABEL               {IDENT}":"
-DIRECTIVE           "."[a-z]*
 
 /* rules */
 %%
@@ -25,13 +27,18 @@ DIRECTIVE           "."[a-z]*
                         sscanf(yytext, "%d", &yylval.num);
                         return TOKEN_NUM;
                     }
-{LABEL}             {
-                        // yylval.label = copy_str(yytext);
-                        return TOKEN_LABEL;
-                    }
-{DIRECTIVE}         {
-                        // yylval.directive = copy_str(yytext);
-                        return TOKEN_DIRECTIVE;
+","                 { return TOKEN_COMMA; }
+":"                 { return TOKEN_COLON; }
+".global"           { return TOKEN_GLOBAL; }
+".extern"           { return TOKEN_EXTERN; }
+".section"          { return TOKEN_SECTION; }
+".word"             { return TOKEN_WORD; }
+".skip"             { return TOKEN_SKIP; }
+".equ"              { return TOKEN_EQU; }
+".end"              { return TOKEN_END; }
+{IDENT}             {
+                        yylval.ident = strdup(yytext);
+                        return TOKEN_IDENT;
                     }
 {BLANK}             {  }
 .                   {
