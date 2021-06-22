@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <map>
+
+#define DEBUG true
 
 class SymTabEntry;
 class RelEntry;
-class DataEntry;
+class Section;
 struct IdentList;
 
 class Assembler
@@ -27,9 +30,8 @@ public:
     bool firstPass = true;
 
     std::vector<SymTabEntry *> SymTab;
-    std::vector<RelEntry *> Rel;
-    std::vector<DataEntry *> Data;
-    std::vector<std::string> Sections;
+    std::map<std::string, SymTabEntry *> SymMap;
+    std::vector<Section *> Sections;
 
     //change to second pass
     void secondPass();
@@ -40,11 +42,13 @@ public:
     void parseExtern(IdentList *list);
     void parseSection(std::string name);
     void parseWord(IdentList *list);
-    void parseWord(int literal);
+    void parseWord(uint16_t literal);
     void parseSkip(int literal);
     void parseEqu(std::string ident, int literal);
     void parseEnd();
     void parseLabel(std::string ident);
+
+    void Finish();
 };
 
 class SymTabEntry
@@ -70,21 +74,31 @@ class RelEntry
 {
     enum RelTypes
     {
-        PCRel,
-        Absolute
+        R_PC32,
+        R_32
     };
-    int section;
     int offset;
     int addend;
     RelTypes relType;
 };
 
-class DataEntry
+class Section
 {
 public:
-    int section;
-    int offset;
-    int data;
+    std::string name;
+    std::vector<RelEntry *> rel;
+    std::vector<uint8_t> data;
+
+
+    Section(std::string _name): name(_name){}
+    ~Section()
+    {
+        while (!rel.empty())
+        {
+            delete rel.back();
+            rel.pop_back();
+        }
+    }
 };
 
 struct IdentList

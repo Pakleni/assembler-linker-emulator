@@ -1,4 +1,5 @@
-.global a, b, c ,d ,e
+.extern a, b, c ,d ,e
+.global kmecim
 
 .section kme
 
@@ -6,6 +7,11 @@
 
 .equ kmecim, 69
 
+.section gigachad
 labelica: .skip 3
+.word 16
+.word 256
 
+.section thundercock
+grmi: .skip 10
 .end
