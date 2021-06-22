@@ -49,6 +49,10 @@ public:
     void parseLabel(std::string ident);
 
     void Finish();
+    void addDataB(uint8_t);
+    void addDataW(uint16_t);
+    void addNonRelativeValue(std::string label, int offset);
+
 };
 
 class SymTabEntry
@@ -72,14 +76,23 @@ public:
 
 class RelEntry
 {
+public:
     enum RelTypes
     {
-        R_PC32,
-        R_32
+        R_PC16,
+        R_16
     };
-    int offset;
-    int addend;
+    int offset = Assembler::getInstance().locationCounter;
     RelTypes relType;
+
+    int entry;
+
+    RelEntry(int _offset, RelTypes _relType, int _entry):
+        relType(_relType),
+        entry(_entry)
+        {
+            offset += _offset;
+        }
 };
 
 class Section
@@ -89,8 +102,9 @@ public:
     std::vector<RelEntry *> rel;
     std::vector<uint8_t> data;
 
+    int id;
 
-    Section(std::string _name): name(_name){}
+    Section(std::string _name, int _id) : name(_name), id(_id) {}
     ~Section()
     {
         while (!rel.empty())

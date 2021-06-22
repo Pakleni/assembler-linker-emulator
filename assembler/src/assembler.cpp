@@ -4,6 +4,8 @@
 
 using namespace std;
 
+const char* RelTypesString[] = {"R_PC16", "R_16"};
+
 const int ABSOLUTE_SECTION = -1;
 const int EXTERNAL_SECTION = -2;
 
@@ -16,6 +18,51 @@ void debug(string c)
 {
     if (DEBUG)
         log(c);
+}
+
+void Assembler::addDataB(uint8_t byte) {
+    Sections[currentSection]->data.push_back(byte);
+}
+
+void Assembler::addDataW(uint16_t word) {
+        uint8_t l = (word & 0xFF00 ) >> 8;
+        uint8_t h =  word & 0x00FF;
+
+        addDataB(l);
+        addDataB(h);
+}
+
+void Assembler::addNonRelativeValue(string label, int offset) {
+    auto s = SymMap.find(label);
+    SymTabEntry *sym;
+    int id;
+
+    if (s == SymMap.end()) {
+        sym = addSymbol(label);
+        sym->isLocal = false;
+        sym->offset = 0;
+        sym->section = EXTERNAL_SECTION;
+    }
+    else {
+        sym = s->second;
+
+    }
+
+    if (sym->section == ABSOLUTE_SECTION) {
+        addDataW(sym->offset);
+    }
+    else {
+        if (!sym->isLocal) {
+            addDataW(0);
+            id = sym->id;
+        }
+        else {
+            addDataW(sym->offset); //addend
+            id = Sections[sym->section]->id;
+        }
+
+        Sections[currentSection]->rel.push_back(new RelEntry(offset, RelEntry::R_16, id));
+    }
 }
 
 int SymTabEntry::idc = 0;
@@ -84,6 +131,7 @@ void Assembler::parseExtern(IdentList *list)
             debug("\tname: " + curr->val);
 
             auto e = addSymbol(curr->val);
+            e->isLocal = false;
             e->section = EXTERNAL_SECTION;
             e->offset = 0;
 
@@ -104,10 +152,10 @@ void Assembler::parseSection(string name)
     {
         debug("I SEC: " + name);
 
-        //dodam novu sekciju
-        Assembler::getInstance().Sections.push_back(new Section("." + name));
         //dodam sekciju u tabelu simbola
-        addSymbol("." + name);
+        auto s = addSymbol("." + name);
+        //dodam novu sekciju
+        Assembler::getInstance().Sections.push_back(new Section("." + name, s->id));
     }
     else
     {
@@ -139,8 +187,8 @@ void Assembler::parseWord(IdentList *list)
         {
             debug("\tname: " + curr->val);
 
-            //dodaj value u DATA
-
+            addNonRelativeValue(curr->val, 0);
+            
             curr = curr->next;
             locationCounter += 2;
         } while (curr);
@@ -155,11 +203,7 @@ void Assembler::parseWord(uint16_t word)
     {
         debug ("II WORD: " + to_string(word));
 
-        uint8_t l = (word & 0xFF00 ) >> 8;
-        uint8_t h =  word & 0x00FF;
-
-        Sections[currentSection]->data.push_back(l);
-        Sections[currentSection]->data.push_back(h);
+        addDataW(word);
 
         //dodaj word u data;
     }
@@ -288,7 +332,10 @@ void Assembler::Finish()
                 << endl;
 
         for (auto j : i->rel) {
-            //TODO
+            cout << left << setw(width) << j->offset
+                << left << setw(width) << RelTypesString[j->relType]
+                << left << setw(width) << j->entry
+                << endl;
         }
 
         cout << endl;
