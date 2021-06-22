@@ -15,7 +15,6 @@
 
 %union {
 	int             num;
-  char *          directive;
 	char *          label;
 	char *          ident;
   struct IdentList *identList;
