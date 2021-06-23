@@ -52,7 +52,6 @@ public:
     void addDataB(uint8_t);
     void addDataW(uint16_t);
     void addNonRelativeValue(std::string label, int offset);
-
 };
 
 class SymTabEntry
@@ -87,12 +86,11 @@ public:
 
     int entry;
 
-    RelEntry(int _offset, RelTypes _relType, int _entry):
-        relType(_relType),
-        entry(_entry)
-        {
-            offset += _offset;
-        }
+    RelEntry(int _offset, RelTypes _relType, int _entry) : relType(_relType),
+                                                           entry(_entry)
+    {
+        offset += _offset;
+    }
 };
 
 class Section
@@ -123,4 +121,50 @@ struct IdentList
 
     std::string val;
     IdentList *next = nullptr;
+};
+
+class Operand
+{
+public:
+    virtual int calculate() = 0;
+};
+
+class SymbolOp : public Operand
+{
+    std::string symbol;
+    // pc = rel na sekciju + locationCounter
+
+    // vrednost             <- simbol.vr            imm
+    // vrednost iz mem abs  <- mem[simbol.vr]       memdir
+    // vrednost iz mem rel  <- mem[pc + simbol.vr]  
+    // vrednost abs         <- vrednost
+    // vrednost rel         <- pc + simbol.vr
+};
+
+class LiteralOp : public Operand
+{
+    int literal;
+    //v
+    //mem[v]
+};
+
+class RegOp : public Operand
+{
+    int reg;
+    //REGDIR
+    //MEMDIR
+};
+
+class RegLiteralOp : public Operand
+{
+    int reg;
+    int literal;
+    //MEMDIR
+};
+
+class RegSymbolOp : public Operand
+{  
+    int reg;
+    std::string symbol;
+    //MEMDIR
 };

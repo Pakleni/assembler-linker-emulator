@@ -325,6 +325,8 @@ void Assembler::Finish()
     cout << endl;
 
     for (auto i: Sections) {
+        if (i->rel.empty()) continue;
+
         cout << "#.rel" << i->name << endl;
         cout    << left << setw(width) << setfill(separator) << "#ofset"
                 << left << setw(width) << setfill(separator) << "tip"
@@ -342,6 +344,8 @@ void Assembler::Finish()
     }
 
     for (auto i: Sections) {
+        if (i->data.empty()) continue;
+
         cout << "#" << i->name << endl;
 
         for (auto j : i->data) {
