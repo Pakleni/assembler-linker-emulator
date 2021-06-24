@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const char* RelTypesString[] = {"R_16"};
+const char* RelTypesString[] = {"R_16", "R_PC16"};
 
 const int ABSOLUTE_SECTION = -1;
 const int EXTERNAL_SECTION = -2;
@@ -72,6 +72,44 @@ void Assembler::addNonRelativeValue(string label, int offset) {
         }
 
         Sections[currentSection]->rel.push_back(new RelEntry(offset, RelEntry::R_16, id));
+    }
+}
+
+void Assembler::addRelativeValue(string label, int offset) {
+    auto s = SymMap.find(label);
+    SymTabEntry *sym;
+    int id;
+
+    if (s == SymMap.end()) {
+        sym = addSymbol(label);
+        sym->isLocal = false;
+        sym->offset = 0;
+        sym->section = EXTERNAL_SECTION;
+    }
+    else {
+        sym = s->second;
+    }
+
+    if (sym->section == ABSOLUTE_SECTION) {
+        //nema smisla
+        log ("Syntax error: You are trying to relative jump to an absolute position");
+        exit(EXIT_FAILURE);
+    }
+    else if (sym->section == currentSection) {
+        addDataW(sym->offset - locationCounter - 5); //relative jump
+    }
+    else {
+        
+        if (!sym->isLocal) {
+            addDataW( -5);
+            id = sym->id;
+        }
+        else {
+            addDataW(sym->offset - 5); //addend
+            id = Sections[sym->section]->id;
+        }
+
+        Sections[currentSection]->rel.push_back(new RelEntry(offset, RelEntry::R_PC16, id));
     }
 }
 
@@ -417,7 +455,7 @@ void Assembler::jmp(uint8_t instr, Operand * op) {
         //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
         locationCounter += 3;
     }
-
+    delete op;
 }
 
 void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
@@ -434,6 +472,8 @@ void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
         //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
         locationCounter += 3;
     }
+
+    delete op;
 }
 
 uint16_t SymOp::calculate() {
@@ -455,16 +495,46 @@ uint16_t SymOp::calculate() {
         //rs = PC, regindpom
         h = 0x0703;
         break;
-        break;
         case(Mode::JMP_PERCENT):
         //rs = PC, regdiradd
         h = 0x0705;
         break;
     }
 
-    Assembler::getInstance().addNonRelativeValue(symbol, 0);
+    if (mode == Mode::JMP_PERCENT || mode == Mode::DATA_PERCENT) {
+        Assembler::getInstance().addRelativeValue(symbol, 0);
+    }
+    else {
+        Assembler::getInstance().addNonRelativeValue(symbol, 0);
+    }
 
     //SymOp instrukcije su uvek 5 bajtova
+    Assembler::getInstance().locationCounter+=2;
+
+    return h;
+}
+
+uint16_t LitOp::calculate() {
+
+    uint16_t h = 0;
+    switch(mode) {
+        //rd = x, up = 0 uvek
+        case(Mode::DATA_DOLLAR):
+        case(Mode::JMP_NULL):
+        //rs = x, imm
+        h = 0x0000;
+        break;
+        case(Mode::DATA_NULL):
+        case(Mode::JMP_TIMES):
+        //rs = x, memdir
+        h = 0x0004;
+        break;
+    }
+
+
+    Assembler::getInstance().addDataW(literal);
+
+    //LitOp instrukcije su uvek 5 bajtova
     Assembler::getInstance().locationCounter+=2;
 
     return h;

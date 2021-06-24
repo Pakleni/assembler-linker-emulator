@@ -4,13 +4,25 @@
 .section kme
 
     #jmps
-    call k
-    call %gnjecim
-    call *labelica
+        #symbol
+        call k
+        call %k
+        #call %gnjecim #relative jump to absolute location
+        call *labelica
+
+        #lits
+        call *3000
+        call 3000
     #regop
-    ldr r0, k
-    ldr r0, $k
-    ldr r0, %k
+        #symbol
+        ldr r0, k
+        ldr r0, $k
+        ldr r0, %k
+
+        #lits
+        ldr r0, $300
+        ldr r0, 123
+
 
     
 #comment

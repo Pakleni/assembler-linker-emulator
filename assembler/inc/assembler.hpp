@@ -54,6 +54,7 @@ public:
     void addDataW(uint16_t);
     void addData3B(uint32_t);
     void addNonRelativeValue(std::string label, int offset);
+    void addRelativeValue(std::string label, int offset);
 
     //standalone instructions
     void push(int);
@@ -61,8 +62,8 @@ public:
 
     void noaddr(uint8_t);
     void tworeg(uint8_t instr, uint8_t rd, uint8_t rs);
-    void jmp(uint8_t instr, Operand * op);
-    void regop(uint8_t instr, uint8_t rd, Operand * op);
+    void jmp(uint8_t instr, Operand *op);
+    void regop(uint8_t instr, uint8_t rd, Operand *op);
 };
 
 class SymTabEntry
@@ -89,7 +90,8 @@ class RelEntry
 public:
     enum RelTypes
     {
-        R_16
+        R_16,
+        R_PC16
     };
     int offset = Assembler::getInstance().locationCounter;
     RelTypes relType;
@@ -168,9 +170,21 @@ public:
 
 class LitOp : public Operand
 {
+public:
+    enum Mode
+    {
+        DATA_DOLLAR,
+        DATA_NULL,
+        JMP_NULL,
+        JMP_TIMES,
+    };
+
     int literal;
-    //v
-    //mem[v]
+    Mode mode;
+    LitOp(int _lit, Mode _m) : literal(_lit), mode(_m){};
+
+    uint16_t calculate();
+    int getSize() { return 5; }
 };
 
 class RegOp : public Operand

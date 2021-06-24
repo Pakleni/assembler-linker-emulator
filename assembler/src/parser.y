@@ -204,11 +204,11 @@ regop
 
 dataop
   : TOKEN_DOLLAR TOKEN_NUM
-  { $$ = nullptr; }
+  { $$ = new LitOp($2, LitOp::Mode::DATA_DOLLAR); }
   | TOKEN_DOLLAR TOKEN_IDENT
   { $$ = new SymOp($2, SymOp::Mode::DATA_DOLLAR); }
   | TOKEN_NUM
-  { $$ = nullptr; }
+  { $$ = new LitOp($1, LitOp::Mode::DATA_NULL); }
   | TOKEN_IDENT
   { $$ = new SymOp($1, SymOp::Mode::DATA_NULL); }
   | TOKEN_PERCENT TOKEN_IDENT
@@ -225,13 +225,13 @@ dataop
 
 jmpop
   : TOKEN_NUM
-  { $$ = nullptr; }
+  { $$ = new LitOp($1, LitOp::Mode::JMP_NULL); }
   | TOKEN_IDENT
   { $$ = new SymOp($1, SymOp::Mode::JMP_NULL); }
   | TOKEN_PERCENT TOKEN_IDENT
   { $$ = new SymOp($2, SymOp::Mode::JMP_PERCENT); }
   | TOKEN_TIMES TOKEN_NUM
-  { $$ = nullptr; }
+  { $$ = new LitOp($2, LitOp::Mode::JMP_TIMES); }
   | TOKEN_TIMES TOKEN_IDENT
   { $$ = new SymOp($2, SymOp::Mode::JMP_TIMES); }
   | TOKEN_TIMES REG
