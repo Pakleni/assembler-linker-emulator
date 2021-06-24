@@ -189,21 +189,41 @@ public:
 
 class RegOp : public Operand
 {
+public:
     int reg;
-    //REGDIR
-    //MEMDIR
+    enum Mode
+    {
+        NONE,
+        BRACKET,
+    };
+
+    Mode mode;
+    RegOp(int _reg, Mode _m) : reg(_reg), mode(_m){};
+
+    uint16_t calculate();
+    int getSize() { return 3; }
 };
 
 class RegLitOp : public Operand
 {
+public:
     int reg;
     int literal;
-    //MEMDIR
+
+    RegLitOp(int _reg, int _lit) : reg(_reg), literal(_lit){};
+
+    uint16_t calculate();
+    int getSize() { return 5; }
 };
 
 class RegSymOp : public Operand
 {
+public:
     int reg;
     std::string symbol;
-    //MEMDIR
+
+    RegSymOp(int _reg, std::string _sym) : reg(_reg), symbol(_sym){};
+
+    uint16_t calculate();
+    int getSize() { return 5; }
 };

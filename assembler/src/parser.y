@@ -214,13 +214,13 @@ dataop
   | TOKEN_PERCENT TOKEN_IDENT
   { $$ = new SymOp($2, SymOp::Mode::DATA_PERCENT); }
   | REG
-  { $$ = nullptr; }
+  { $$ = new RegOp($1, RegOp::Mode::NONE); }
   | TOKEN_OBRACKET REG TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegOp($2, RegOp::Mode::BRACKET); }
   | TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_NUM TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegLitOp($2, $4); }
   | TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_IDENT TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegSymOp($2, $4); }
   ;
 
 jmpop
@@ -235,12 +235,12 @@ jmpop
   | TOKEN_TIMES TOKEN_IDENT
   { $$ = new SymOp($2, SymOp::Mode::JMP_TIMES); }
   | TOKEN_TIMES REG
-  { $$ = nullptr; }
+  { $$ = new RegOp($2, RegOp::Mode::NONE); }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegOp($3, RegOp::Mode::BRACKET); }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_NUM TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegLitOp($3, $5); }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_IDENT TOKEN_CBRACKET
-  { $$ = nullptr; }
+  { $$ = new RegSymOp($3, $5); }
   ;
 %%

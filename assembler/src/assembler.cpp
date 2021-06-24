@@ -539,3 +539,47 @@ uint16_t LitOp::calculate() {
 
     return h;
 }
+
+uint16_t RegOp::calculate() {
+
+    uint16_t h = 0;
+    switch(mode) {
+        //rd = x, up = 0 uvek
+        case(Mode::NONE):
+        //rs = reg, regdir
+        h = 0x0001 +(reg << 8);
+        break;
+        case(Mode::BRACKET):
+        //rs = reg, regind
+        h = 0x0002 +(reg << 8);
+        break;
+    }
+
+    return h;
+}
+
+uint16_t RegLitOp::calculate() {
+
+    //rs = reg, regindpom
+    uint16_t h = 0x0003 +(reg << 8);;
+
+    Assembler::getInstance().addDataW(literal);
+
+    //RegLitOp instrukcije su uvek 5 bajtova
+    Assembler::getInstance().locationCounter+=2;
+
+    return h;
+}
+
+uint16_t RegSymOp::calculate() {
+
+    //rs = reg, regindpom
+    uint16_t h = 0x0003 +(reg << 8);
+
+    Assembler::getInstance().addNonRelativeValue(symbol, 0);
+
+    //RegSymOp instrukcije su uvek 5 bajtova
+    Assembler::getInstance().locationCounter+=2;
+
+    return h;
+}

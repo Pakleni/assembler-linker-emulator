@@ -13,6 +13,18 @@
         #lits
         call *3000
         call 3000
+
+        #reg
+        call *r0
+        call *[psw]
+        
+        #reg + lit
+        call *[psw + 3]
+
+        #reg + sym
+        call *[psw + k]
+
+
     #regop
         #symbol
         ldr r0, k
@@ -22,6 +34,16 @@
         #lits
         ldr r0, $300
         ldr r0, 123
+
+        #reg
+        ldr r0, r0
+        ldr r0, [psw]
+
+        #reg + lit
+        ldr r0, [psw + 3]
+        
+        #reg + sym
+        ldr r0, [psw + k]
 
 
     
