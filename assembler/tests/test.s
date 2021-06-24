@@ -3,17 +3,15 @@
 
 .section kme
 
-    push r0
-    push r1
-    ldr r0, term_in
-    str r0, term_out
-    ldr r0, %myCounter # pcrel
-    ldr r1, $1
-    add r0, r1
-    str r0, myCounter # abs
-    pop r1
-    pop r0
-    iret
+    #jmps
+    call k
+    call %gnjecim
+    call *labelica
+    #regop
+    ldr r0, k
+    ldr r0, $k
+    ldr r0, %k
+
     
 #comment
     .equ kmecim, 69
@@ -24,7 +22,7 @@
 labelica:
     .skip   3
 k:  
-    .word   256
+    .word   k
     .word   a,
             b,
             gnjecim,

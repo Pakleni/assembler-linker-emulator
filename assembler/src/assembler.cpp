@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const char* RelTypesString[] = {"R_PC16", "R_16"};
+const char* RelTypesString[] = {"R_16"};
 
 const int ABSOLUTE_SECTION = -1;
 const int EXTERNAL_SECTION = -2;
@@ -25,11 +25,21 @@ void Assembler::addDataB(uint8_t byte) {
 }
 
 void Assembler::addDataW(uint16_t word) {
-        uint8_t l = (word & 0xFF00 ) >> 8;
-        uint8_t h =  word & 0x00FF;
+        uint8_t h = (word & 0xFF00 ) >> 8;
+        uint8_t l =  word & 0x00FF;
 
         addDataB(l);
         addDataB(h);
+}
+
+void Assembler::addData3B(uint32_t word) {
+        uint8_t l1 = (word & 0x00FF0000 ) >> 16;
+        uint8_t l2 = (word & 0x0000FF00 ) >> 8;
+        uint8_t l3 =  word & 0x000000FF;
+
+        addDataB(l3);
+        addDataB(l2);
+        addDataB(l1);
 }
 
 void Assembler::addNonRelativeValue(string label, int offset) {
@@ -354,4 +364,108 @@ void Assembler::Finish()
 
         cout << endl;
     }
+}
+
+void Assembler::push(int reg) {
+    if (!firstPass) {
+        debug("II PUSH R" + to_string(reg));
+        uint32_t pushCode = 0xB00612;
+        addData3B(pushCode + (reg << 12));
+    }
+    locationCounter += 3;
+}
+
+void Assembler::pop(int reg) {
+    if (!firstPass) {
+        debug("II POP R" + to_string(reg));
+        uint32_t popCode = 0xA00642;
+        addData3B(popCode + (reg << 12));
+    }
+    locationCounter += 3;
+}
+
+void Assembler::noaddr(uint8_t instr) {
+    if (!firstPass) {
+        debug("II NOADDR: " + to_string(instr));
+
+        addDataB(instr);
+    }
+    locationCounter += 1;
+}
+
+void Assembler::tworeg(uint8_t instr, uint8_t rd, uint8_t rs) {
+    if (!firstPass) {
+        debug("II TWOREG: " + to_string(instr) + ": " + to_string(rd) + ", " + to_string(rs));
+
+        uint16_t code = (instr << 8) + (rd << 4) + rs;
+        addDataW(code);
+    }
+    locationCounter += 2;
+}
+
+void Assembler::jmp(uint8_t instr, Operand * op) {
+    debug("II JMP: " + to_string(instr));
+
+    if (firstPass) {
+        locationCounter += op->getSize();
+    }
+    else {
+        uint32_t code = (instr << 16) + op->calculate();
+
+        addData3B(code);
+
+        //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
+        locationCounter += 3;
+    }
+
+}
+
+void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
+    debug("II REGOP: " + to_string(instr));
+
+    if (firstPass) {
+        locationCounter += op->getSize();
+    }
+    else {
+        uint32_t code = (instr << 16) + (rd << 12) + op->calculate();
+
+        addData3B(code);
+
+        //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
+        locationCounter += 3;
+    }
+}
+
+uint16_t SymOp::calculate() {
+
+    uint16_t h = 0;
+    switch(mode) {
+        //rd = x, up = 0 uvek
+        case(Mode::DATA_DOLLAR):
+        case(Mode::JMP_NULL):
+        //rs = x, imm
+        h = 0x0000;
+        break;
+        case(Mode::DATA_NULL):
+        case(Mode::JMP_TIMES):
+        //rs = x, memdir
+        h = 0x0004;
+        break;
+        case(Mode::DATA_PERCENT):
+        //rs = PC, regindpom
+        h = 0x0703;
+        break;
+        break;
+        case(Mode::JMP_PERCENT):
+        //rs = PC, regdiradd
+        h = 0x0705;
+        break;
+    }
+
+    Assembler::getInstance().addNonRelativeValue(symbol, 0);
+
+    //SymOp instrukcije su uvek 5 bajtova
+    Assembler::getInstance().locationCounter+=2;
+
+    return h;
 }

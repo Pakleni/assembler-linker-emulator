@@ -9,6 +9,7 @@ class SymTabEntry;
 class RelEntry;
 class Section;
 struct IdentList;
+class Operand;
 
 class Assembler
 {
@@ -51,7 +52,17 @@ public:
     void Finish();
     void addDataB(uint8_t);
     void addDataW(uint16_t);
+    void addData3B(uint32_t);
     void addNonRelativeValue(std::string label, int offset);
+
+    //standalone instructions
+    void push(int);
+    void pop(int);
+
+    void noaddr(uint8_t);
+    void tworeg(uint8_t instr, uint8_t rd, uint8_t rs);
+    void jmp(uint8_t instr, Operand * op);
+    void regop(uint8_t instr, uint8_t rd, Operand * op);
 };
 
 class SymTabEntry
@@ -78,7 +89,6 @@ class RelEntry
 public:
     enum RelTypes
     {
-        R_PC16,
         R_16
     };
     int offset = Assembler::getInstance().locationCounter;
@@ -126,22 +136,37 @@ struct IdentList
 class Operand
 {
 public:
-    virtual int calculate() = 0;
+    virtual uint16_t calculate() = 0;
+    virtual int getSize() = 0;
 };
 
-class SymbolOp : public Operand
+class SymOp : public Operand
 {
+public:
+    enum Mode
+    {
+        // vrednost             <- simbol.vr            imm
+        DATA_DOLLAR,
+        // vrednost iz mem abs  <- mem[simbol.vr]       memdir
+        DATA_NULL,
+        // vrednost iz mem rel  <- mem[pc + simbol.vr]
+        DATA_PERCENT,
+        // vrednost abs         <- vrednost
+        JMP_NULL,
+        // vrednost rel         <- pc + simbol.vr
+        JMP_PERCENT,
+        // vrednost iz mem abs  <- mem[simbol.vr]       memdir
+        JMP_TIMES,
+    };
     std::string symbol;
-    // pc = rel na sekciju + locationCounter
+    Mode mode;
+    SymOp(std::string _sym, Mode _m) : symbol(_sym), mode(_m){};
 
-    // vrednost             <- simbol.vr            imm
-    // vrednost iz mem abs  <- mem[simbol.vr]       memdir
-    // vrednost iz mem rel  <- mem[pc + simbol.vr]  
-    // vrednost abs         <- vrednost
-    // vrednost rel         <- pc + simbol.vr
+    uint16_t calculate();
+    int getSize() { return 5; }
 };
 
-class LiteralOp : public Operand
+class LitOp : public Operand
 {
     int literal;
     //v
@@ -155,15 +180,15 @@ class RegOp : public Operand
     //MEMDIR
 };
 
-class RegLiteralOp : public Operand
+class RegLitOp : public Operand
 {
     int reg;
     int literal;
     //MEMDIR
 };
 
-class RegSymbolOp : public Operand
-{  
+class RegSymOp : public Operand
+{
     int reg;
     std::string symbol;
     //MEMDIR

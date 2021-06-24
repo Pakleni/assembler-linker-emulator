@@ -17,8 +17,10 @@
 	int             num;
 	char *          label;
 	char *          ident;
-	char *          reg;
+	int             reg;
   struct IdentList *identList;
+  class Operand *     op;
+  int             instr;
 }
 
 %token              TOKEN_COMMA
@@ -68,6 +70,16 @@
 
 %type <identList> identList;
 
+%type <op>     jmpop
+%type <op>     dataop
+
+
+
+%type <instr>     noadr
+%type <instr>     jmp
+%type <instr>     singlereg
+%type <instr>     tworeg
+%type <instr>     regop
 %%
 
 prog
@@ -112,70 +124,123 @@ identList
   ;
 
 instruction
-  : I_HALT
-  | I_IRET
-  | I_RET
+  : noadr
+  { Assembler::getInstance().noaddr($1); }
   | jmp jmpop
+  { Assembler::getInstance().jmp($1, $2); }
   | singlereg REG
+  { Assembler::getInstance().tworeg($1, $2, 0 ); }
   | tworeg REG TOKEN_COMMA REG
+  { Assembler::getInstance().tworeg($1, $2, $4); }
   | regop REG TOKEN_COMMA dataop
+  { Assembler::getInstance().regop($1, $2, $4); }
+  | I_PUSH REG
+  { Assembler::getInstance().push($2); }
+  | I_POP REG
+  { Assembler::getInstance().pop($2); }
   ;
 
+noadr
+  : I_HALT
+  { $$ = 0b00000000; }
+  | I_IRET
+  { $$ = 0b00100000; }
+  | I_RET
+  { $$ = 0b01000000; }
+  ;
 jmp
   : I_CALL
+  { $$ = 0b00110000; }
   | I_JMP
+  { $$ = 0b01010000; }
   | I_JEQ
+  { $$ = 0b01010001; }
   | I_JNE
+  { $$ = 0b01010010; }
   | I_JGT
+  { $$ = 0b01010011; }
   ;
 
 singlereg
   : I_INT
-  | I_PUSH
-  | I_POP
+  { $$ = 0b00010000; }
   | I_NOT
+  { $$ = 0b10000000; }
+  ;
 
 tworeg
   : I_XCHG
+  { $$ = 0b01100000; }
   | I_ADD
+  { $$ = 0b01110000; }
   | I_SUB
+  { $$ = 0b01110001; }
   | I_MUL
+  { $$ = 0b01110010; }
   | I_DIV
+  { $$ = 0b01110011; }
   | I_CMP
+  { $$ = 0b01110100; }
   | I_AND
+  { $$ = 0b10000001; }
   | I_OR
+  { $$ = 0b10000010; }
   | I_XOR
+  { $$ = 0b10000011; }
   | I_TEST
+  { $$ = 0b10000100; }
   | I_SHL
+  { $$ = 0b10010000; }
   | I_SHR
+  { $$ = 0b10010001; }
   ;
 
 regop
   : I_LDR
+  { $$ = 0b10100000; }
   | I_STR
+  { $$ = 0b10110000; }
   ;
 
 dataop
   : TOKEN_DOLLAR TOKEN_NUM
+  { $$ = nullptr; }
   | TOKEN_DOLLAR TOKEN_IDENT
+  { $$ = new SymOp($2, SymOp::Mode::DATA_DOLLAR); }
   | TOKEN_NUM
+  { $$ = nullptr; }
   | TOKEN_IDENT
+  { $$ = new SymOp($1, SymOp::Mode::DATA_NULL); }
   | TOKEN_PERCENT TOKEN_IDENT
+  { $$ = new SymOp($2, SymOp::Mode::DATA_PERCENT); }
   | REG
+  { $$ = nullptr; }
   | TOKEN_OBRACKET REG TOKEN_CBRACKET
+  { $$ = nullptr; }
   | TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_NUM TOKEN_CBRACKET
+  { $$ = nullptr; }
   | TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_IDENT TOKEN_CBRACKET
+  { $$ = nullptr; }
   ;
 
 jmpop
   : TOKEN_NUM
+  { $$ = nullptr; }
   | TOKEN_IDENT
+  { $$ = new SymOp($1, SymOp::Mode::JMP_NULL); }
   | TOKEN_PERCENT TOKEN_IDENT
+  { $$ = new SymOp($2, SymOp::Mode::JMP_PERCENT); }
   | TOKEN_TIMES TOKEN_NUM
+  { $$ = nullptr; }
   | TOKEN_TIMES TOKEN_IDENT
+  { $$ = new SymOp($2, SymOp::Mode::JMP_TIMES); }
   | TOKEN_TIMES REG
+  { $$ = nullptr; }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_CBRACKET
+  { $$ = nullptr; }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_NUM TOKEN_CBRACKET
+  { $$ = nullptr; }
   | TOKEN_TIMES TOKEN_OBRACKET REG TOKEN_PLUS TOKEN_IDENT TOKEN_CBRACKET
+  { $$ = nullptr; }
   ;
 %%

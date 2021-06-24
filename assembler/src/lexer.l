@@ -72,10 +72,17 @@ IDENT               [A-Za-z_][A-Za-z0-9_]*
 "shr"               { return I_SHR; }
 "ldr"               { return I_LDR; }
 "str"               { return I_STR; }
-"r"[0-7]            { yylval.reg = strdup(yytext); return REG; }
-"sp"                { yylval.reg = strdup(yytext); return REG; }
-"pc"                { yylval.reg = strdup(yytext); return REG; }
-"psw"               { yylval.reg = strdup(yytext); return REG; }
+"r0"                { yylval.reg = 0; return REG; }
+"r1"                { yylval.reg = 1; return REG; }
+"r2"                { yylval.reg = 2; return REG; }
+"r3"                { yylval.reg = 3; return REG; }
+"r4"                { yylval.reg = 4; return REG; }
+"r5"                { yylval.reg = 5; return REG; }
+"r6"                { yylval.reg = 6; return REG; }
+"r7"                { yylval.reg = 7; return REG; }
+"sp"                { yylval.reg = 6; return REG; }
+"pc"                { yylval.reg = 7; return REG; }
+"psw"               { yylval.reg = 8; return REG; }
 {IDENT}             {
                         yylval.ident = strdup(yytext);
                         return TOKEN_IDENT;
