@@ -617,7 +617,7 @@ void SHTable(int shstrttabsize, int symtabsize, int strtabsize) {
         //align
         writeDW(4);
         //velicina ulaza
-        writeDW(0);
+        writeDW(REL_SIZE);
     }
 
     //symtab table
@@ -695,7 +695,7 @@ void RelSections(int* offset)  {
 
             int relType = j->relType == RelEntry::R_16 ? 1 : 2;
 
-            writeDW(j->entry + (relType << 24));
+            writeDW((j->entry << 8) + relType);
 
             (*offset) += REL_SIZE;
         }
