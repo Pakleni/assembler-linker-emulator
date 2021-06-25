@@ -49,7 +49,6 @@ public:
     void parseEnd();
     void parseLabel(std::string ident);
 
-    void Finish();
     void addDataB(uint8_t);
     void addDataW(uint16_t);
     void addData3B(uint32_t);
@@ -64,6 +63,13 @@ public:
     void tworeg(uint8_t instr, uint8_t rd, uint8_t rs);
     void jmp(uint8_t instr, Operand *op);
     void regop(uint8_t instr, uint8_t rd, Operand *op);
+
+    bool humanReadable = false;
+    void setHumanReadable(bool b) { humanReadable = b; }
+    void HumanReadableOutput();
+    void Output();
+    void Finish();
+    void BinaryOutput();
 };
 
 class SymTabEntry
@@ -81,6 +87,8 @@ public:
     int offset = Assembler::getInstance().locationCounter;
     //local u prvom prolazu
     bool isLocal = true;
+    int string_table_i = 0;
+    bool isSection = false;
 
     SymTabEntry(std::string _label) : label(_label) {}
 };
@@ -112,6 +120,13 @@ public:
     std::vector<RelEntry *> rel;
     std::vector<uint8_t> data;
 
+    int string_table_i = 0;
+    int string_table_reli = 0;
+    int offset = -1;
+    int rel_offset = -1;
+
+
+    //symbol id
     int id;
 
     Section(std::string _name, int _id) : name(_name), id(_id) {}
@@ -123,6 +138,7 @@ public:
             rel.pop_back();
         }
     }
+    void Write();
 };
 
 struct IdentList

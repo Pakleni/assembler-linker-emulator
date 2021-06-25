@@ -4,7 +4,7 @@
 #include "../inc/assembler.hpp"
 
 
-const char* DEFAULT_OUTPUT = "out/obj.o";
+#define DEFAULT_OUTPUT "out/obj.o"
 
 int main(int argc, char* argv[])
 {
@@ -13,8 +13,18 @@ int main(int argc, char* argv[])
 
     freopen(argv[argc-1], "r", stdin);
 
-    if (argc > 2 && strcmp(argv[1], "-o") == 0) freopen(argv[2], "w+", stdout);
-    else freopen(DEFAULT_OUTPUT, "w+", stdout);
+    const char * out = DEFAULT_OUTPUT;
+
+    for (int i = 1; i < argc-1; i++) {
+        if (strcmp(argv[i], "-o") == 0) {
+            out = argv[++i];
+        }
+        else if(strcmp(argv[i], "-h") == 0) {
+            Assembler::getInstance().setHumanReadable(true);
+        }
+    }
+    
+    freopen(out, "w+", stdout);
 
     if (yyparse()) {
         return EXIT_FAILURE;
