@@ -1,4 +1,4 @@
-SRCS = src/main.cpp out/parser.cpp out/lexer.cpp src/assembler.cpp
+SRCS = src/main.cpp out/parser.cpp out/lexer.cpp src/assembler.cpp src/operand.cpp src/printer.cpp
 
 all:
 	$(MAKE) parser
@@ -17,6 +17,11 @@ test:
 	./out/assembler -o out/test.o tests/test.s
 	hexyl out/test.o
 	readelf -a out/test.o
+
+test-human:
+	$(MAKE) clean
+	$(MAKE) all
+	./out/assembler -h -o out/test.o tests/test.s
 
 clean:
 	rm -f out/*
