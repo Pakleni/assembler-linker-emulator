@@ -388,11 +388,15 @@ const int REL_SIZE = 8;
 const int SYM_SIZE = 16;
 const int SHENTRY_SIZE = 0x28;
 const string SYMTABSTRING = ".symtab";
+const int HEADERS_BEFORE_SECTIONS = 3;
 
 int SHSTRTABSize() {
     int c = 1;
 
     string strtab = ".shstrtab";
+    c += strtab.size() + 1;
+
+    strtab = ".strtab";
     c += strtab.size() + 1;
 
     for (auto i: Assembler::getInstance().Sections) {
@@ -402,12 +406,19 @@ int SHSTRTABSize() {
         }
         c+= i->name.size() + 1;
     }
+    
+    c += SYMTABSTRING.size() + 1;
+
+    return c;
+}
+
+int STRTABSize() {
+    int c = 0;
+
     for (auto i: Assembler::getInstance().SymTab) {
-        if (i->isSection) continue;
+        i->string_table_i = c;
         c+= i->label.size() + 1;
     }
-
-    c += SYMTABSTRING.size() + 1;
 
     return c;
 }
@@ -415,6 +426,7 @@ int SHSTRTABSize() {
 int CalculateSHOFF() {
     int c = ELF_SIZE;
     c += SHSTRTABSize();
+    c += STRTABSize();
     c += Assembler::getInstance().SymTab.size() * SYM_SIZE;
 
     for (auto i: Assembler::getInstance().Sections) {
@@ -466,22 +478,27 @@ void ELFHeader() {
     //section header entry size
     writeW(SHENTRY_SIZE);
     //sec h num
-    int num = 3;
+    int num = HEADERS_BEFORE_SECTIONS + 1;
     for(auto i: Assembler::getInstance().Sections) {
         ++num;
         if (i->rel.size() > 0) ++num;
     }
+    
     writeW(num);
     //shstrndx bice uvek 1... lakse tako
     writeW(1);
 }
 
 int SHSTRTable() {
-    //strtabelica
     writeB(0); //undef
     int c = 1;
 
     string strtab = ".shstrtab";
+    cout << strtab;
+    writeB(0);
+    c += strtab.size() + 1;
+
+    strtab = ".strtab";
     cout << strtab;
     writeB(0);
     c += strtab.size() + 1;
@@ -500,14 +517,6 @@ int SHSTRTable() {
         c+= i->name.size() + 1;
     }
 
-    for (auto i: Assembler::getInstance().SymTab) {
-        if (i->isSection) continue;
-        i->string_table_i = c;
-        cout << i->label;
-        writeB(0);
-        c+= i->label.size() + 1;
-    }
-
     cout << SYMTABSTRING;
     writeB(0);
     c += SYMTABSTRING.size() + 1;
@@ -515,7 +524,20 @@ int SHSTRTable() {
     return c;
 }
 
-void SHTable(int shstrttabsize, int symtabsize) {
+int STRTable() {
+    int c = 0;
+
+    for (auto i: Assembler::getInstance().SymTab) {
+        i->string_table_i = c;
+        cout << i->label;
+        writeB(0);
+        c+= i->label.size() + 1;
+    }
+
+    return c;
+}
+
+void SHTable(int shstrttabsize, int symtabsize, int strtabsize) {
     //UNDEF section
     for (int i = 0; i < 10; i++) writeDW(0);
     
@@ -541,11 +563,33 @@ void SHTable(int shstrttabsize, int symtabsize) {
     //velicina ulaza
     writeDW(0);
 
+    //string table
+    //indeks u tabeli stringova
+    writeDW(11);
+    //type STRTAB
+    writeDW(3);
+    //flags
+    writeDW(0);
+    //adresa
+    writeDW(0);
+    //ofset odma posle header
+    writeDW(ELF_SIZE + shstrttabsize);
+    //size
+    writeDW(strtabsize);
+    //link
+    writeDW(0);
+    //info
+    writeDW(0);
+    //align
+    writeDW(1);
+    //velicina ulaza
+    writeDW(0);
+
     for (auto i: Assembler::getInstance().Sections) {
         i->Write();
     }
 
-    int num = 2;
+    int num = HEADERS_BEFORE_SECTIONS;
     for(auto i: Assembler::getInstance().Sections) {
         ++num;
         if (i->rel.size() > 0) ++num;
@@ -569,7 +613,7 @@ void SHTable(int shstrttabsize, int symtabsize) {
         //link
         writeDW(num);
         //info
-        writeDW(Assembler::getInstance().SymTab[i->id]->section + 2);
+        writeDW(Assembler::getInstance().SymTab[i->id]->section + HEADERS_BEFORE_SECTIONS);
         //align
         writeDW(4);
         //velicina ulaza
@@ -578,7 +622,7 @@ void SHTable(int shstrttabsize, int symtabsize) {
 
     //symtab table
     //indeks u tabeli stringova [poslednji]
-    writeDW(shstrttabsize - 8);
+    writeDW(shstrttabsize - SYMTABSTRING.size() - 1);
     //type SYMTAB
     writeDW(2);
     //flags
@@ -586,11 +630,11 @@ void SHTable(int shstrttabsize, int symtabsize) {
     //adresa
     writeDW(0);
     //ofset odma posle shstr
-    writeDW(ELF_SIZE + shstrttabsize);
+    writeDW(ELF_SIZE + shstrttabsize + strtabsize);
     //size
     writeDW(symtabsize);
     //link
-    writeDW(0);
+    writeDW(2);
     //info
     writeDW(0);
     //align
@@ -614,7 +658,7 @@ void PrintSym(SymTabEntry * i) {
         writeW(0xFFF1);
     }
     else {
-        writeW(i->section + 2);
+        writeW(i->section + HEADERS_BEFORE_SECTIONS);
     }
 }
 
@@ -660,21 +704,23 @@ void RelSections(int* offset)  {
 
 void Assembler::Output(){
 
-    
     ELFHeader();
+    int c = ELF_SIZE;
     
     int shrstrssize = SHSTRTable();
+    c+= shrstrssize;
 
-    //pisi sadrzaj sekcija ?
-    int c = shrstrssize + ELF_SIZE;
+    int strtabsize = STRTable();
+    c+= strtabsize;
+
     int symtabsize = SYMTable();
     c+= symtabsize;
 
     DataSections(&c);
 
-    RelSections(&c); 
+    RelSections(&c);
 
-    SHTable(shrstrssize, symtabsize);
+    SHTable(shrstrssize, symtabsize, strtabsize);
 }
 
 void Assembler::BinaryOutput() {
