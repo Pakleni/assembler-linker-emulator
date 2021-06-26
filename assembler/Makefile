@@ -21,7 +21,7 @@ test:
 test-human:
 	$(MAKE) clean
 	$(MAKE) all
-	./out/assembler -h -o out/test.o tests/test.s
+	./out/assembler -h -o out/test-human.o tests/test.s
 
 clean:
 	rm -f out/*

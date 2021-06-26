@@ -58,7 +58,7 @@ void ELFFile::addSymbol(string label, ELFSTEntry * st) {
 
     add->id = symtab.size();
 
-    switch (st->info && 0x0F) {
+    switch (st->info & 0x0F) {
         case (1):
         add->isLocal = false;
         break;
@@ -67,7 +67,7 @@ void ELFFile::addSymbol(string label, ELFSTEntry * st) {
         break;
     }
 
-    switch ((st->info && 0xF0) >> 4) {
+    switch ((st->info & 0xF0) >> 4) {
         case (3):
         add->isSection = true;
         sections[add->section]->id = add->id;
@@ -167,6 +167,5 @@ ELFFile * Reader::read() {
     delete[] symbols;
     delete[] sym_names;
 
-    cout << "succ" << endl;
     return elf;
 }
