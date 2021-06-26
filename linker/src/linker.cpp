@@ -1,6 +1,6 @@
 #include "../inc/linker.hpp"
 #include "../inc/reader.hpp"
-#include "../inc/printer.hpp"
+#include "../../assembler/inc/printer.hpp"
 #include <iostream>
 #include <sstream>
 

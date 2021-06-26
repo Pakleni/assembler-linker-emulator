@@ -1,6 +1,6 @@
 #include <vector>
-#include "structures.hpp"
-#include "../inc/elf_structures.hpp"
+#include "../../assembler/inc/structures.hpp"
+#include "../../assembler/inc/elf_structures.hpp"
 #include <string>
 
 class ELFFile
