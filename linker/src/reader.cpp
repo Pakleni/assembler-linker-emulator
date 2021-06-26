@@ -58,7 +58,7 @@ void ELFFile::addSymbol(string label, ELFSTEntry * st) {
 
     add->id = symtab.size();
 
-    switch (st->info & 0x0F) {
+    switch ((st->info & 0xF0) >> 4) {
         case (1):
         add->isLocal = false;
         break;
@@ -67,7 +67,7 @@ void ELFFile::addSymbol(string label, ELFSTEntry * st) {
         break;
     }
 
-    switch ((st->info & 0xF0) >> 4) {
+    switch (st->info & 0x0F) {
         case (3):
         add->isSection = true;
         sections[add->section]->id = add->id;
@@ -85,6 +85,17 @@ void ELFFile::addSection(string label) {
     Section * add = new Section(label, -1);
 
     sections.push_back(add);
+}
+
+void ELFFile::addRel(ELFRelEntry * entry, ELFSHeader * header) {
+    int section = header->info - HEADERS_BEFORE_SECTIONS;
+
+    int offset = entry->offset;
+    RelEntry::RelTypes type = (entry->info & 0x000000FF) == 1 ? RelEntry::R_16 : RelEntry::R_PC16;
+    int entry_id = (entry->info & 0xFFFFFF00) >> 8;
+    RelEntry * add = new RelEntry(offset,type, entry_id);
+
+    sections[section]->rel.push_back(add);
 }
 
 ELFFile::~ELFFile() {
@@ -128,6 +139,7 @@ ELFFile * Reader::read() {
         fread(&(sh[i]), sizeof(ELFSHeader), 1, file);
     }
 
+    //sections
     string * sh_names = new string[shnum];
 
     for (int i = 0; i < shnum; i++) {
@@ -139,6 +151,7 @@ ELFFile * Reader::read() {
         }
     }
 
+    //symbols
     ELFSHeader * symtab = sh + (shnum - 1);
 
     int symbols_num = symtab->size / symtab->entsize;
@@ -158,7 +171,26 @@ ELFFile * Reader::read() {
     }
 
     //data sections
+    for (int i = 0; i < shnum; i++) {
+        if (sh[i].type == 1) {
+            fseek(file, sh[i].offset, SEEK_SET);
+            for (int j = 0; j < sh[i].size; j++) {
+                elf->sections[i-HEADERS_BEFORE_SECTIONS]->data.push_back(fgetc(file));
+            }
+        }
+    }
     //rel sections
+    for (int i = 0; i < shnum; i++) {
+        if (sh[i].type == 9) {
+            fseek(file, sh[i].offset, SEEK_SET);
+            for (int j = 0; j < sh[i].size/sh[i].entsize; j++) {
+                
+                ELFRelEntry curr;
+                fread(&curr, sizeof(ELFRelEntry), 1, file);
+                elf->addRel(&curr, sh + i);
+            }
+        }
+    }
 
     // Close the file
     fclose(file);

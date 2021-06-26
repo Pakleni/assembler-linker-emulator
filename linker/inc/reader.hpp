@@ -11,6 +11,8 @@ public:
     ~ELFFile();
     void addSymbol(std::string label, ELFSTEntry * entry);
     void addSection(std::string label);
+    void addRel(ELFRelEntry * entry, ELFSHeader * header);
+
 
 };
 
