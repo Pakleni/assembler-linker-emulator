@@ -1,6 +1,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_set>
+
 #include "../inc/reader.hpp"
 
 class Linker
@@ -34,8 +36,20 @@ public:
 
     void parseFile(std::string file);
     void output(std::string file);
+    void resolve(ELFFile * f);
+    void addUnresolved(ELFFile * f);
+
 
 private:
+    std::map <std::string, std::pair<SymTabEntry*, ELFFile*>> resolved;
+    std::map<std::string, SymTabEntry *> unresolved;
+
+    std::vector<SymTabEntry *> symtab;
+    std::vector<Section *> sections;
+    std::map<std::string, Section *> section_map;
+
+
+
     std::vector<std::string> sources;
     std::map<std::string, int> places;
     Mode mode = none;

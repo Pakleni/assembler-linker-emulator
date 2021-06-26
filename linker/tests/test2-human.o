@@ -1,0 +1,30 @@
+#tabela simbola
+#naziv          sekcija         vr.             Vez.            R.b             
+.ivt            .ivt            0               local           0               
+labelara        .ivt            12              global          1               
+.isr            .isr            0               local           2               
+term_out        ABS             65280           local           3               
+term_in         ABS             65282           local           4               
+asciiCode       ABS             84              local           5               
+isr_reset       .isr            0               local           6               
+isr_timer       .isr            5               local           7               
+isr_terminal    .isr            22              local           8               
+myStart         EXT             0               global          9               
+myCounter       EXT             0               global          10              
+
+#.rel.ivt
+#ofset          tip             redni_broj      
+0               R_16            2               
+4               R_16            2               
+6               R_16            2               
+
+#.rel.isr
+#ofset          tip             redni_broj      
+0               R_16            9               
+38              R_PC16          10              
+50              R_16            10              
+
+#.ivt
+00 00 00 00 05 00 16 00 FA FA FA FA FA FA 
+#.isr
+00 00 00 00 50 12 06 B0 54 00 00 00 A0 00 FF 04 00 B0 42 06 A0 20 12 06 B0 12 16 B0 02 FF 04 00 A0 00 FF 04 00 B0 FB FF 03 07 A0 01 00 00 10 A0 01 70 00 00 04 00 B0 42 16 A0 42 06 A0 20 

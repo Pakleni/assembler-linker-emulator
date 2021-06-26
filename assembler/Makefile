@@ -20,10 +20,11 @@ test:
 	# readelf -a out/test.o
 
 
-test-human:
+test-h:
 	$(MAKE) clean
 	$(MAKE) all
-	./out/assembler -h -o out/test-human.o tests/test.s
+	./out/assembler -h -o out/interrupts-human.o tests/interrupts.s
+	./out/assembler -h -o out/main-human.o tests/main.s
 
 clean:
 	rm -f out/*

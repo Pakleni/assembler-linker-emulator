@@ -3,8 +3,14 @@ SRCS = src/main.cpp src/linker.cpp src/reader.cpp ../assembler/src/printer.cpp .
 all:
 	g++ $(SRCS) -o out/linker -g3
 
-test:
+test-hex:
 	make all
-	hexyl tests/interrupts.o
-	readelf -a tests/interrupts.o
-	./out/linker -place=kme@0xFEFE -hex tests/interrupts.o tests/main.o
+	# hexyl tests/interrupts.o
+	# readelf -a tests/interrupts.o
+	./out/linker -place=ivt@0x0000 -hex tests/interrupts.o tests/main.o
+
+test-link:
+	make all
+	# hexyl tests/interrupts.o
+	# readelf -a tests/interrupts.o
+	./out/linker -linkable tests/test.o tests/interrupts.o tests/test2.o tests/main.o
