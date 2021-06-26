@@ -1,4 +1,4 @@
-SRCS = src/main.cpp out/parser.cpp out/lexer.cpp src/assembler.cpp src/operand.cpp src/printer.cpp
+SRCS = src/main.cpp out/parser.cpp out/lexer.cpp src/assembler.cpp src/operand.cpp src/printer.cpp src/structures.cpp
 
 all:
 	$(MAKE) parser

@@ -1,4 +1,5 @@
 #include "../inc/assembler.hpp"
+#include "../inc/printer.hpp"
 #include <iostream>
 
 using namespace std;
@@ -36,7 +37,7 @@ void Assembler::addData3B(uint32_t word) {
         addDataB(l1);
 }
 
-void Assembler::addNonRelativeValue(string label, int offset) {
+void Assembler::addNonRelativeValue(string label) {
     auto s = SymMap.find(label);
     SymTabEntry *sym;
     int id;
@@ -65,11 +66,11 @@ void Assembler::addNonRelativeValue(string label, int offset) {
             id = Sections[sym->section]->id;
         }
 
-        Sections[currentSection]->rel.push_back(new RelEntry(offset, RelEntry::R_16, id));
+        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter, RelEntry::R_16, id));
     }
 }
 
-void Assembler::addRelativeValue(string label, int offset) {
+void Assembler::addRelativeValue(string label) {
     auto s = SymMap.find(label);
     SymTabEntry *sym;
     int id;
@@ -103,7 +104,7 @@ void Assembler::addRelativeValue(string label, int offset) {
             id = Sections[sym->section]->id;
         }
 
-        Sections[currentSection]->rel.push_back(new RelEntry(offset, RelEntry::R_PC16, id));
+        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter, RelEntry::R_PC16, id));
     }
 }
 
@@ -212,7 +213,7 @@ void Assembler::parseWord(IdentList *list)
         {
             debug("\tname: " + curr->val);
 
-            addNonRelativeValue(curr->val, 0);
+            addNonRelativeValue(curr->val);
             
             curr = curr->next;
             locationCounter += 2;
@@ -378,11 +379,11 @@ void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
 }
 
 void Assembler::Finish() {
-    if (humanReadable) Printer::getInstance().HumanPrint();
-    else Printer::getInstance().Print();
-}
+    Printer printer (Sections, SymTab, stdout);
 
-int SymTabEntry::idc = 0;
+    if (humanReadable) printer.HumanPrint();
+    else printer.Print();
+}
 
 SymTabEntry *Assembler::addSymbol(string label)
 {
@@ -392,7 +393,7 @@ SymTabEntry *Assembler::addSymbol(string label)
         exit(EXIT_FAILURE);
     }
 
-    SymTabEntry *c = new SymTabEntry(label);
+    SymTabEntry *c = new SymTabEntry(label, currentSection, locationCounter);
 
     SymMap.insert({label, c});
     SymTab.push_back(c);

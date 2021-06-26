@@ -1,18 +1,22 @@
 #include <stdio.h>
 #include "operand.hpp"
-#include "printer.hpp"
+#include "structures.hpp"
 #include <string>
 #include <vector>
 #include <map>
 
 #define DEBUG false
 
-#define ABSOLUTE_SECTION -1
-#define EXTERNAL_SECTION -2
+struct IdentList
+{
+    IdentList(std::string _val) : val(_val){};
+    IdentList(std::string _val, IdentList *_next) : val(_val), next(_next){};
+    ~IdentList() { delete next; }
 
-class SymTabEntry;
-class RelEntry;
-class Section;
+    std::string val;
+    IdentList *next = nullptr;
+};
+
 struct IdentList;
 
 class Assembler
@@ -56,8 +60,8 @@ public:
     void addDataB(uint8_t);
     void addDataW(uint16_t);
     void addData3B(uint32_t);
-    void addNonRelativeValue(std::string label, int offset);
-    void addRelativeValue(std::string label, int offset);
+    void addNonRelativeValue(std::string label);
+    void addRelativeValue(std::string label);
 
     //standalone instructions
     void push(int);
@@ -74,80 +78,3 @@ public:
     void Finish();
 };
 
-class SymTabEntry
-{
-private:
-    static int idc;
-
-public:
-    int id = idc++;
-
-    std::string label;
-    //dobija id trenutnog section-a
-    int section = Assembler::getInstance().currentSection;
-    //dobija trenutnu vrednost location counter-a
-    int offset = Assembler::getInstance().locationCounter;
-    //local u prvom prolazu
-    bool isLocal = true;
-    int string_table_i = 0;
-    bool isSection = false;
-
-    SymTabEntry(std::string _label) : label(_label) {}
-};
-
-class RelEntry
-{
-public:
-    enum RelTypes
-    {
-        R_16,
-        R_PC16
-    };
-    int offset = Assembler::getInstance().locationCounter;
-    RelTypes relType;
-
-    int entry;
-
-    RelEntry(int _offset, RelTypes _relType, int _entry) : relType(_relType),
-                                                           entry(_entry)
-    {
-        offset += _offset;
-    }
-};
-
-class Section
-{
-public:
-    std::string name;
-    std::vector<RelEntry *> rel;
-    std::vector<uint8_t> data;
-
-    int string_table_i = 0;
-    int string_table_reli = 0;
-    int offset = -1;
-    int rel_offset = -1;
-
-
-    //symbol id
-    int id;
-
-    Section(std::string _name, int _id) : name(_name), id(_id) {}
-    ~Section()
-    {
-        while (!rel.empty())
-        {
-            delete rel.back();
-            rel.pop_back();
-        }
-    }
-};
-
-struct IdentList
-{
-    IdentList(std::string _val) : val(_val){};
-    IdentList(std::string _val, IdentList *_next) : val(_val), next(_next){};
-    ~IdentList() { delete next; }
-
-    std::string val;
-    IdentList *next = nullptr;
-};
