@@ -33,6 +33,6 @@ private:
     void printSHTable(int shstrttabsize, int symtabsize, int strtabsize);
     void writeB(uint8_t b)
     {
-        fprintf(stdout, "%c", b);
+        fprintf(file, "%c", b);
     }
 };

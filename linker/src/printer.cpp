@@ -2,6 +2,7 @@
 #include "../inc/elf_structures.hpp"
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 
 using namespace std;
 
@@ -34,12 +35,14 @@ void Printer::HumanPrint()
 
     const char *RelTypesString[] = {"R_16", "R_PC16"};
 
-    cout << "#tabela simbola" << endl;
+    stringstream ss;
+
+    ss << "#tabela simbola" << endl;
 
     const char separator = ' ';
     const int width = 16;
 
-    cout << left << setw(width) << setfill(separator) << "#naziv"
+    ss << left << setw(width) << setfill(separator) << "#naziv"
          << left << setw(width) << setfill(separator) << "sekcija"
          << left << setw(width) << setfill(separator) << "vr."
          << left << setw(width) << setfill(separator) << "Vez."
@@ -66,7 +69,7 @@ void Printer::HumanPrint()
             section = sections[i->section]->name;
         }
 
-        cout << left << setw(width) << setfill(separator) << i->label
+        ss << left << setw(width) << setfill(separator) << i->label
              << left << setw(width) << setfill(separator) << section
              << left << setw(width) << setfill(separator) << i->offset
              << left << setw(width) << setfill(separator) << (i->isLocal ? "local" : "global")
@@ -74,43 +77,46 @@ void Printer::HumanPrint()
              << endl;
     }
 
-    cout << endl;
+    ss << endl;
 
     for (auto i : sections)
     {
         if (i->rel.empty())
             continue;
 
-        cout << "#.rel" << i->name << endl;
-        cout << left << setw(width) << setfill(separator) << "#ofset"
+        ss << "#.rel" << i->name << endl;
+        ss << left << setw(width) << setfill(separator) << "#ofset"
              << left << setw(width) << setfill(separator) << "tip"
              << left << setw(width) << setfill(separator) << "redni_broj"
              << endl;
 
         for (auto j : i->rel)
         {
-            cout << left << setw(width) << j->offset
+            ss << left << setw(width) << j->offset
                  << left << setw(width) << RelTypesString[j->relType]
                  << left << setw(width) << j->entry
                  << endl;
         }
 
-        cout << endl;
+        ss << endl;
     }
+
+    string out = ss.str();
+    fprintf(file, "%s", out.c_str());
 
     for (auto i : sections)
     {
         if (i->data.empty())
             continue;
 
-        cout << "#" << i->name << endl;
+        fprintf(file, "#%s\n" , i->name.c_str() );
 
         for (auto j : i->data)
         {
-            printf("%.2X ", j);
+            fprintf(file, "%.2X ", j);
         }
 
-        cout << endl;
+        fprintf(file, "\n");
     }
 }
 
@@ -188,12 +194,12 @@ int Printer::printSHStrTable()
     int c = 1;
 
     string strtab = ".shstrtab";
-    cout << strtab;
+    fprintf(file, "%s", strtab.c_str());
     writeB(0);
     c += strtab.size() + 1;
 
     strtab = ".strtab";
-    cout << strtab;
+    fprintf(file, "%s", strtab.c_str());
     writeB(0);
     c += strtab.size() + 1;
 
@@ -203,17 +209,18 @@ int Printer::printSHStrTable()
         {
             i->string_table_reli = c;
             string rel = ".rel";
-            cout << rel;
+            fprintf(file, "%s", rel.c_str());
             c += rel.size();
         }
         i->string_table_i = c;
         symtab[i->id]->string_table_i = c;
-        cout << i->name;
+        fprintf(file, "%s", i->name.c_str());
         writeB(0);
         c += i->name.size() + 1;
     }
 
-    cout << SYMTABSTRING;
+    fprintf(file, "%s", SYMTABSTRING.c_str());
+
     writeB(0);
     c += SYMTABSTRING.size() + 1;
 
@@ -227,7 +234,7 @@ int Printer::printStrTable()
     for (auto i : symtab)
     {
         i->string_table_i = c;
-        cout << i->label;
+        fprintf(file, "%s", i->label.c_str());
         writeB(0);
         c += i->label.size() + 1;
     }

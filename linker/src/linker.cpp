@@ -48,9 +48,13 @@ void Linker::start(string out) {
 void Linker::parseFile(string name) {
     ELFFile * elf = Reader(name).read();
 
+    FILE * file = fopen("out/test.bin", "wb");
+    
     Printer(elf->sections,
             elf->symtab,
-            stdout).HumanPrint();
+            file).HumanPrint();
+
+    fclose(file);
 }
 
 void Linker::output(string file) {
