@@ -1,5 +1,4 @@
 #include "../inc/linker.hpp"
-#include "../inc/reader.hpp"
 #include "../../assembler/inc/printer.hpp"
 #include <iostream>
 #include <sstream>
@@ -32,7 +31,11 @@ void Linker::parsePlace(string s) {
 }
 
 Linker::~Linker() {
-
+    while (!files.empty())
+    {
+        delete files.back();
+        files.pop_back();
+    }
 }
 
 void Linker::start(string out) {
@@ -47,12 +50,13 @@ void Linker::start(string out) {
 
 void Linker::parseFile(string name) {
     ELFFile * elf = Reader(name).read();
-
+    files.push_back(elf);
+    
     FILE * file = fopen("out/test.bin", "wb");
     
     Printer(elf->sections,
             elf->symtab,
-            file).HumanPrint();
+            stdout).HumanPrint();
 
     fclose(file);
 }

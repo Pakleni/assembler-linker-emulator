@@ -4,36 +4,18 @@
 
 using namespace std;
 
-uint32_t readDW(FILE * file){
-    uint32_t ret = 0;
-    char c;
-    int d = 0;
-    for (int i = 0; i < 4; i++) {
-        c = fgetc(file);
-        ret += (c << 8*(d++));
-    }
-
-    return ret;
-}
-uint16_t readW(FILE * file){
-    uint16_t ret = 0;
-    char c;
-    int d = 0;
-    for (int i = 0; i < 2; i++) {
-        c = fgetc(file);
-        ret += (c << 8*(d++));
-    }
-
-    return ret;
-}
 string readStr(FILE * file) {
     string str = "";
 
     char c= fgetc(file);
 
-    while (c!= 0) {
+    while (c!= 0 && c!= EOF) {
         str += c;
         c = fgetc(file);
+    }
+    if (c == EOF) {
+        cout << "End of file reached!" << endl;
+        exit(1);
     }
 
     return str;
@@ -99,7 +81,16 @@ void ELFFile::addRel(ELFRelEntry * entry, ELFSHeader * header) {
 }
 
 ELFFile::~ELFFile() {
-    //TODO
+    while (!symtab.empty())
+    {
+        delete symtab.back();
+        symtab.pop_back();
+    }
+    while (!sections.empty())
+    {
+        delete sections.back();
+        sections.pop_back();
+    }
 }
 
 ELFFile * Reader::read() {
@@ -118,14 +109,18 @@ ELFFile * Reader::read() {
         cout << "Input not in correct format" << endl;
         exit(EXIT_FAILURE);
     }
+
     ELFFile * elf = new ELFFile();
 
     fseek(file, 32, SEEK_SET);
-    int shoff = readDW(file);
+    uint32_t shoff;
+    fread(&shoff, sizeof(shoff), 1, file);
 
     fseek(file, 48, SEEK_SET);
-    int shnum = readW(file);
-    int shstrndx = readW(file);
+    uint16_t shnum;
+    fread(&shnum, sizeof(shnum), 1, file);    
+    uint16_t shstrndx;
+    fread(&shstrndx, sizeof(shstrndx), 1, file);    
 
     fseek(file, shoff + sizeof(ELFSHeader)*shstrndx, SEEK_SET);
 

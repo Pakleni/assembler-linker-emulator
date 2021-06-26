@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "../inc/reader.hpp"
 
 class Linker
 {
@@ -8,6 +9,8 @@ private:
     Linker(){};
 
 public:
+    std::vector <ELFFile *> files;
+    
     ~Linker();
     Linker(Linker const &) = delete;
     void operator=(Linker const &) = delete;

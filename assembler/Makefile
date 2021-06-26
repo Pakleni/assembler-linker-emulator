@@ -14,9 +14,11 @@ parser:
 test:
 	$(MAKE) clean
 	$(MAKE) all
-	./out/assembler -o out/test.o tests/test.s
-	hexyl out/test.o
-	readelf -a out/test.o
+	./out/assembler -o out/interrupts.o tests/interrupts.s
+	./out/assembler -o out/main.o tests/main.s
+	# hexyl out/test.o
+	# readelf -a out/test.o
+
 
 test-human:
 	$(MAKE) clean

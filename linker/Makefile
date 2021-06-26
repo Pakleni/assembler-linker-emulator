@@ -5,6 +5,6 @@ all:
 
 test:
 	make all
-	# hexyl tests/test.o
-	# readelf -a tests/test.o
-	./out/linker -place=kme@0xFEFE -hex tests/test.o
+	hexyl tests/interrupts.o
+	readelf -a tests/interrupts.o
+	./out/linker -place=kme@0xFEFE -hex tests/interrupts.o tests/main.o
