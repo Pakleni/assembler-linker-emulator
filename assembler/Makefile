@@ -19,12 +19,5 @@ test:
 	# hexyl out/test.o
 	# readelf -a out/test.o
 
-
-test-h:
-	$(MAKE) clean
-	$(MAKE) all
-	./out/assembler -h -o out/interrupts-human.o tests/interrupts.s
-	./out/assembler -h -o out/main-human.o tests/main.s
-
 clean:
 	rm -f out/*

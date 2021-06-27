@@ -19,12 +19,9 @@ int main(int argc, char* argv[])
         if (strcmp(argv[i], "-o") == 0) {
             out = argv[++i];
         }
-        else if(strcmp(argv[i], "-h") == 0) {
-            Assembler::getInstance().setHumanReadable(true);
-        }
     }
     
-    freopen(out, "w+", stdout);
+    Assembler::getInstance().setOut(out);
 
     if (yyparse()) {
         return EXIT_FAILURE;

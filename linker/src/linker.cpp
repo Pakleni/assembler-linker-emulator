@@ -400,9 +400,16 @@ void Linker::parseFile(string name)
 void Linker::output(string out)
 {
 
-    FILE *file = fopen(out.c_str(), "wb");
+    FILE * file = fopen(out.c_str(), "wb");
+
     if (mode == Mode::linkable)
     {
+        Printer(sections,
+                symtab,
+                file)
+            .HumanPrint();
+
+        file = freopen((out+".bin").c_str(), "wb", file);
         Printer(sections,
                 symtab,
                 file)
@@ -412,6 +419,7 @@ void Linker::output(string out)
     {
         HexPrint(file);
     }
+
     fclose(file);
 }
 

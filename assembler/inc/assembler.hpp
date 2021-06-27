@@ -23,6 +23,7 @@ class Assembler
 {
 private:
     Assembler(){};
+    std::string out;
 
 public:
     ~Assembler();
@@ -72,9 +73,7 @@ public:
     void jmp(uint8_t instr, Operand *op);
     void regop(uint8_t instr, uint8_t rd, Operand *op);
 
-    bool humanReadable = false;
-    void setHumanReadable(bool b) { humanReadable = b; }
+    void setOut(std::string _out) { out = _out; }
 
     void Finish();
 };
-

@@ -15,53 +15,62 @@ void debug(string c)
         log(c);
 }
 
-void Assembler::addDataB(uint8_t byte) {
+void Assembler::addDataB(uint8_t byte)
+{
     Sections[currentSection]->data.push_back(byte);
 }
 
-void Assembler::addDataW(uint16_t word) {
-        uint8_t h = (word & 0xFF00 ) >> 8;
-        uint8_t l =  word & 0x00FF;
+void Assembler::addDataW(uint16_t word)
+{
+    uint8_t h = (word & 0xFF00) >> 8;
+    uint8_t l = word & 0x00FF;
 
-        addDataB(l);
-        addDataB(h);
+    addDataB(l);
+    addDataB(h);
 }
 
-void Assembler::addData3B(uint32_t word) {
-        uint8_t l1 = (word & 0x00FF0000 ) >> 16;
-        uint8_t l2 = (word & 0x0000FF00 ) >> 8;
-        uint8_t l3 =  word & 0x000000FF;
+void Assembler::addData3B(uint32_t word)
+{
+    uint8_t l1 = (word & 0x00FF0000) >> 16;
+    uint8_t l2 = (word & 0x0000FF00) >> 8;
+    uint8_t l3 = word & 0x000000FF;
 
-        addDataB(l3);
-        addDataB(l2);
-        addDataB(l1);
+    addDataB(l3);
+    addDataB(l2);
+    addDataB(l1);
 }
 
-void Assembler::addNonRelativeValue(string label) {
+void Assembler::addNonRelativeValue(string label)
+{
     auto s = SymMap.find(label);
     SymTabEntry *sym;
     int id;
 
-    if (s == SymMap.end()) {
+    if (s == SymMap.end())
+    {
         sym = addSymbol(label);
         sym->isLocal = false;
         sym->offset = 0;
         sym->section = EXTERNAL_SECTION;
     }
-    else {
+    else
+    {
         sym = s->second;
-
     }
 
-    if (sym->section == ABSOLUTE_SECTION) {
+    if (sym->section == ABSOLUTE_SECTION)
+    {
         addDataW(sym->offset);
     }
-    else {
-        if (!sym->isLocal) {
+    else
+    {
+        if (!sym->isLocal)
+        {
             addDataW(0);
             id = sym->id;
         }
-        else {
+        else
+        {
             addDataW(sym->offset); //addend
             id = Sections[sym->section]->id;
         }
@@ -70,36 +79,44 @@ void Assembler::addNonRelativeValue(string label) {
     }
 }
 
-void Assembler::addRelativeValue(string label) {
+void Assembler::addRelativeValue(string label)
+{
     auto s = SymMap.find(label);
     SymTabEntry *sym;
     int id;
 
-    if (s == SymMap.end()) {
+    if (s == SymMap.end())
+    {
         sym = addSymbol(label);
         sym->isLocal = false;
         sym->offset = 0;
         sym->section = EXTERNAL_SECTION;
     }
-    else {
+    else
+    {
         sym = s->second;
     }
 
-    if (sym->section == ABSOLUTE_SECTION) {
+    if (sym->section == ABSOLUTE_SECTION)
+    {
         //nema smisla
-        log ("Syntax error: You are trying to relative jump to an absolute position");
+        log("Syntax error: You are trying to relative jump to an absolute position");
         exit(EXIT_FAILURE);
     }
-    else if (sym->section == currentSection) {
+    else if (sym->section == currentSection)
+    {
         addDataW(sym->offset - locationCounter - 5); //relative jump
     }
-    else {
-        
-        if (!sym->isLocal) {
-            addDataW( -5);
+    else
+    {
+
+        if (!sym->isLocal)
+        {
+            addDataW(-5);
             id = sym->id;
         }
-        else {
+        else
+        {
             addDataW(sym->offset - 5); //addend
             id = Sections[sym->section]->id;
         }
@@ -186,7 +203,7 @@ void Assembler::parseSection(string name)
     else
     {
         debug("II SEC: " + name);
-    }    
+    }
 }
 
 void Assembler::parseWord(IdentList *list)
@@ -214,7 +231,7 @@ void Assembler::parseWord(IdentList *list)
             debug("\tname: " + curr->val);
 
             addNonRelativeValue(curr->val);
-            
+
             curr = curr->next;
             locationCounter += 2;
         } while (curr);
@@ -227,7 +244,7 @@ void Assembler::parseWord(uint16_t word)
 {
     if (!firstPass)
     {
-        debug ("II WORD: " + to_string(word));
+        debug("II WORD: " + to_string(word));
 
         addDataW(word);
 
@@ -244,7 +261,8 @@ void Assembler::parseSkip(int literal)
     }
     else
     {
-        for (int i = 0; i < literal; i++) {
+        for (int i = 0; i < literal; i++)
+        {
             Sections[currentSection]->data.push_back(0);
         }
         debug("II SKIP: " + to_string(literal));
@@ -306,8 +324,10 @@ Assembler::~Assembler()
     }
 }
 
-void Assembler::push(int reg) {
-    if (!firstPass) {
+void Assembler::push(int reg)
+{
+    if (!firstPass)
+    {
         debug("II PUSH R" + to_string(reg));
         uint32_t pushCode = 0xB00612;
         addData3B(pushCode + (reg << 12));
@@ -315,8 +335,10 @@ void Assembler::push(int reg) {
     locationCounter += 3;
 }
 
-void Assembler::pop(int reg) {
-    if (!firstPass) {
+void Assembler::pop(int reg)
+{
+    if (!firstPass)
+    {
         debug("II POP R" + to_string(reg));
         uint32_t popCode = 0xA00642;
         addData3B(popCode + (reg << 12));
@@ -324,8 +346,10 @@ void Assembler::pop(int reg) {
     locationCounter += 3;
 }
 
-void Assembler::noaddr(uint8_t instr) {
-    if (!firstPass) {
+void Assembler::noaddr(uint8_t instr)
+{
+    if (!firstPass)
+    {
         debug("II NOADDR: " + to_string(instr));
 
         addDataB(instr);
@@ -333,8 +357,10 @@ void Assembler::noaddr(uint8_t instr) {
     locationCounter += 1;
 }
 
-void Assembler::tworeg(uint8_t instr, uint8_t rd, uint8_t rs) {
-    if (!firstPass) {
+void Assembler::tworeg(uint8_t instr, uint8_t rd, uint8_t rs)
+{
+    if (!firstPass)
+    {
         debug("II TWOREG: " + to_string(instr) + ": " + to_string(rd) + ", " + to_string(rs));
 
         uint16_t code = (instr << 8) + (rd << 4) + rs;
@@ -343,13 +369,16 @@ void Assembler::tworeg(uint8_t instr, uint8_t rd, uint8_t rs) {
     locationCounter += 2;
 }
 
-void Assembler::jmp(uint8_t instr, Operand * op) {
+void Assembler::jmp(uint8_t instr, Operand *op)
+{
     debug("II JMP: " + to_string(instr));
 
-    if (firstPass) {
+    if (firstPass)
+    {
         locationCounter += op->getSize();
     }
-    else {
+    else
+    {
         uint32_t code = (instr << 16) + op->calculate();
 
         addData3B(code);
@@ -360,13 +389,16 @@ void Assembler::jmp(uint8_t instr, Operand * op) {
     delete op;
 }
 
-void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
+void Assembler::regop(uint8_t instr, uint8_t rd, Operand *op)
+{
     debug("II REGOP: " + to_string(instr));
 
-    if (firstPass) {
+    if (firstPass)
+    {
         locationCounter += op->getSize();
     }
-    else {
+    else
+    {
         uint32_t code = (instr << 16) + (rd << 12) + op->calculate();
 
         addData3B(code);
@@ -378,11 +410,13 @@ void Assembler::regop(uint8_t instr, uint8_t rd, Operand * op) {
     delete op;
 }
 
-void Assembler::Finish() {
-    Printer printer (Sections, SymTab, stdout);
+void Assembler::Finish()
+{
+    FILE *file = fopen(out.c_str(), "w+");
+    Printer(Sections, SymTab, file).HumanPrint();
 
-    if (humanReadable) printer.HumanPrint();
-    else printer.Print();
+    freopen((out + ".bin").c_str(), "w+", file);
+    Printer(Sections, SymTab, file).Print();
 }
 
 SymTabEntry *Assembler::addSymbol(string label)
