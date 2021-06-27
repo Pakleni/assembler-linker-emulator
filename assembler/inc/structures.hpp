@@ -16,7 +16,7 @@ public:
     std::string label;
 
     int section;
-    int offset;
+    uint16_t offset;
 
     bool isLocal = true;
     int string_table_i = 0;

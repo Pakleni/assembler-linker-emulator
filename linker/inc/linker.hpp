@@ -55,7 +55,7 @@ private:
     std::map<std::string, Section *> section_map;
 
     bool testInsertion (Section * sec,
-                        std::reverse_iterator<std::__cxx11::list<Section *>::iterator> i);
+                        std::_List_iterator<Section *> &i);
 
     uint16_t ADDR(int entry);
 

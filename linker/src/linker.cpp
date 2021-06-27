@@ -63,30 +63,33 @@ void Linker::insertIntoMemory(Section *sec, int place)
     }
 }
 
-bool Linker::testInsertion(Section *sec, reverse_iterator<list<Section *>::iterator> i)
+bool Linker::testInsertion(Section *sec, std::_List_iterator<Section *> &i)
 {
-    if (i != memory.rbegin())
+    if (i != --memory.end())
     {
         Section *pr = *i;
-        Section *nx = *(--i);
+        Section *nx = *(++i);
 
-        int place = symtab[nx->id]->offset - sec->data.size();
+        uint16_t place = symtab[nx->id]->offset - sec->data.size();
 
-        if (symtab[pr->id]->offset + pr->data.size() < place)
+        if (symtab[pr->id]->offset + pr->data.size() <= place)
         {
             symtab[sec->id]->offset = place;
-            memory.insert(i.base(), sec);
+            i = memory.insert(i, sec);
             return true;
         }
+        else --i;
     }
     else
     {
-        int place = symtab[(*i)->id]->offset + (*i)->data.size();
+        Section *pr = *(i);
 
-        if (place + sec->data.size() < 0xFF00)
+        uint16_t place = 0xFF00 - sec->data.size();
+
+        if (symtab[pr->id]->offset + pr->data.size() <= place)
         {
-            symtab[sec->id]->offset = 0xFF00 - sec->data.size();
-            memory.push_back(sec);
+            symtab[sec->id]->offset = place;
+            i = memory.insert(memory.end(), sec);
             return true;
         }
     }
@@ -97,37 +100,35 @@ bool Linker::testInsertion(Section *sec, reverse_iterator<list<Section *>::itera
 void Linker::insertIntoMemory(Section *sec)
 {
 
-    static reverse_iterator<list<Section *>::iterator> last = memory.rend();
+    static auto last = memory.end();
 
     if (memory.size() == 0)
     {
         symtab[sec->id]->offset = 0xFF00 - sec->data.size();
         memory.push_back(sec);
-        last = memory.rbegin();
+        last = --memory.end();
         return;
     }
 
-    reverse_iterator<list<Section *>::iterator> temp = last;
+    std::_List_iterator<Section *> temp = --last;
 
-    for (; last != memory.rend(); ++last)
+    for (; last != --memory.begin(); --last)
     {
         if (testInsertion(sec, last))
         {
-            ++last;
             return;
         }
     }
 
-    for (last = memory.rbegin(); last != temp; ++last)
+    for (last = --memory.end(); last != --memory.begin(); --last)
     {
         if (testInsertion(sec, last))
         {
-            ++last;
             return;
         }
     }
 
-    cout << "Cant place all sections into memory" << endl;
+    cout << "Can't place all sections into memory" << endl;
     exit(1);
 }
 
@@ -414,7 +415,7 @@ void Linker::output(string out)
     fclose(file);
 }
 
-inline void prefill (FILE * file, int& temp) {
+inline void prefill (FILE * file, uint16_t& temp) {
     if ((temp % 8) == 0) return;
 
     fprintf(file, "%.4X:", temp - temp%8);
@@ -423,7 +424,7 @@ inline void prefill (FILE * file, int& temp) {
     }
 }
 
-inline void postfill (FILE * file, int& temp) {
+inline void postfill (FILE * file, uint16_t& temp) {
     if ((temp % 8) == 0) return;
 
     for (;(temp % 8)!=0;++temp) {
@@ -435,11 +436,11 @@ inline void postfill (FILE * file, int& temp) {
 void Linker::HexPrint(FILE * file)
 {
 
-    int temp = 0; 
+    uint16_t temp = 0; 
     for (auto i = memory.begin(); i != memory.end(); ++i)
     {
         
-        int curr = symtab[(*i)->id]->offset;
+        uint16_t curr = symtab[(*i)->id]->offset;
 
         if (curr != temp) {
             postfill(file, temp);
