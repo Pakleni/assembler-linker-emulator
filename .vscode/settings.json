@@ -47,6 +47,10 @@
         "iostream": "cpp",
         "iomanip": "cpp",
         "ctime": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "bitset": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp",
+        "list": "cpp"
     }
 }

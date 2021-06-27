@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 #include <unordered_set>
 
 #include "../inc/reader.hpp"
@@ -39,16 +40,24 @@ public:
     void resolve(ELFFile * f);
     void addUnresolved(ELFFile * f);
 
+    void insertIntoMemory(Section * sec, int place);
+    void insertIntoMemory(Section * sec);
+    void HexPrint();
+
+    std::list<Section *> memory;
+    std::vector<SymTabEntry *> symtab;
 
 private:
     std::map <std::string, std::pair<SymTabEntry*, ELFFile*>> resolved;
     std::map<std::string, SymTabEntry *> unresolved;
 
-    std::vector<SymTabEntry *> symtab;
     std::vector<Section *> sections;
     std::map<std::string, Section *> section_map;
 
+    bool testInsertion (Section * sec,
+                        std::reverse_iterator<std::__cxx11::list<Section *>::iterator> i);
 
+    uint16_t ADDR(int entry);
 
     std::vector<std::string> sources;
     std::map<std::string, int> places;

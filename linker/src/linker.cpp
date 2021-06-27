@@ -5,6 +5,112 @@
 
 using namespace std;
 
+
+void Linker::insertIntoMemory(Section * sec, int place) {
+
+    if (memory.size() == 0) {
+        symtab[sec->id]->offset = place;
+        memory.push_back(sec);
+        return;
+    }
+
+    for (auto i = memory.begin(); i != memory.end(); ++i) {
+        if (symtab[(*i)->id]->offset > place) {
+            Section * nx = (*i);
+            if (i != memory.begin()) {
+                Section * pr = (*(--i));
+
+                if ((symtab[pr->id]->offset + pr->data.size() < place) &&
+                    (symtab[nx->id]->offset >= place + sec->data.size())) {
+
+                    symtab[sec->id]->offset = place;
+                    memory.insert(++i, sec);
+                    return;
+                }
+            }
+            else {
+                if (symtab[nx->id]->offset >= place + sec->data.size()) {
+                    symtab[sec->id]->offset = place;
+                    memory.insert(i, sec);
+                    return;
+                }
+            }
+
+            cout << "Some memory overlaps" << endl;
+            exit(1);
+        }
+    }
+
+    Section * pr = *memory.rbegin();
+    if (symtab[pr->id]->offset + pr->data.size() < place) {
+        symtab[sec->id]->offset = place;
+        memory.push_back(sec);
+        return;
+    }
+    else {
+        cout << "Some memory overlaps" << endl;
+        exit(1);
+    }
+}
+
+bool Linker::testInsertion (Section * sec, reverse_iterator<list<Section *>::iterator> i) {
+    if (i != memory.rbegin()) {
+        Section * pr = *i;
+        Section * nx = *(--i);
+
+        int place = symtab[nx->id]->offset - sec->data.size();
+
+        if (symtab[pr->id]->offset + pr->data.size() < place) {
+            symtab[sec->id]->offset = place;
+            memory.insert(i.base(), sec);
+            return true;
+        }
+    }
+    else {
+        int place = symtab[(*i)->id]->offset + (*i)->data.size();
+
+        if (place + sec->data.size() < 0xFF00) {
+            symtab[sec->id]->offset = 0xFF00 - sec->data.size();
+            memory.push_back(sec);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Linker::insertIntoMemory(Section * sec) {
+
+    static reverse_iterator<list<Section *>::iterator> last = memory.rend();
+    
+    if (memory.size() == 0) {
+        symtab[sec->id]->offset = 0xFF00 - sec->data.size();
+        memory.push_back(sec);
+        last = memory.rbegin();
+        return;
+    }
+
+    reverse_iterator<list<Section *>::iterator> temp = last;
+
+    for (;last != memory.rend(); ++last) {
+        if (testInsertion(sec, last)) {
+            ++last;
+            return;
+        }
+    }
+
+
+    for (last = memory.rbegin(); last != temp; ++last) {
+        if (testInsertion(sec, last)) {
+            ++last;
+            return;
+        }
+    }
+
+    cout << "Cant place all sections into memory" << endl;
+    exit(1);
+}
+
 void Linker::parsePlace(string s) {
     auto i = s.find("=");
 
@@ -150,8 +256,9 @@ void Linker::start(string out) {
 
     //resolve multiple same sections
     for (auto i: resolved) {
-        auto sym = i.second.first;
 
+        auto sym = i.second.first;
+        
         if (sym->section != ABSOLUTE_SECTION) {
             auto f = i.second.second;
             if (f == nullptr) continue; //sekcija je ili undef
@@ -164,21 +271,23 @@ void Linker::start(string out) {
     }
 
     if (mode == Mode::hex) {
-        int currentLocation = 0xFF00;
         //locations of sections
-        for (int i = 0; i< sections.size(); i++) {
-            auto s = sections[i];
+        list<Section *> not_in_memory;
 
+        for (auto s: sections) {
             auto c = places.find(s->name.substr(1));
             if (c == places.end()) {
-                currentLocation -= s->data.size();
-                symtab[s->id]->offset = currentLocation;
+                not_in_memory.push_back(s);
             }
             else {
-                symtab[s->id]->offset = c->second;
+                insertIntoMemory(s, c->second);
             }
         }
-        //TODO
+
+        while (!not_in_memory.empty()) {
+            insertIntoMemory(not_in_memory.front());
+            not_in_memory.pop_front();
+        }
 
         // resolve rels
         for(auto i: sections) {
@@ -187,7 +296,21 @@ void Linker::start(string out) {
             Section * section = sec->second;
 
             for (auto r: i->rel) {
+                uint16_t addend = i->data[r->offset] + (i->data[r->offset + 1] << 8);
                 
+                uint16_t res;
+
+                if (r->relType == RelEntry::R_PC16) {
+                    uint16_t adr = symtab[i->id]->offset + r->offset;
+
+                    res = ADDR(r->entry) + addend - adr;
+                }
+                else {
+                    res = ADDR(r->entry) + addend;
+                }
+                i->data[r->offset] = res & 0x00ff;
+                i->data[r->offset + 1] = (res & 0xff00) >> 8;
+
             }
         }
     }
@@ -196,19 +319,37 @@ void Linker::start(string out) {
     output(out);
 }
 
+uint16_t Linker::ADDR(int entry) {
+    auto sym = symtab[entry];
+
+    if (sym->isSection) {
+        return sym->offset;
+    }
+    else {
+        return symtab[sections[sym->section]->id]->offset + sym->offset;
+    }
+}
+
 void Linker::parseFile(string name) {
     ELFFile * elf = Reader(name).read();
     files.push_back(elf);
 }
 
 void Linker::output(string out) {
-    FILE * file = fopen(out.c_str(), "wb");
     
-    // if (mode == Mode::linkable) {
+    if (mode == Mode::linkable) {
+        FILE * file = fopen(out.c_str(), "wb");
         Printer(sections,
                 symtab,
-                file).HumanPrint();
-    // }
+                file).Print();
+        fclose(file);
+    }
+    else {
+        HexPrint();
+    }
 
-    fclose(file);
+}
+
+void Linker::HexPrint() {
+
 }

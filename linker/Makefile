@@ -7,7 +7,7 @@ test-hex:
 	make all
 	# hexyl tests/interrupts.o
 	# readelf -a tests/interrupts.o
-	./out/linker -place=ivt@0x0000 -hex tests/interrupts.o tests/main.o
+	./out/linker -place=ivt@0x0000 -o out/out.hex -hex tests/interrupts.o tests/main.o
 
 test-link:
 	make all
