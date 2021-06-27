@@ -469,5 +469,5 @@ void Linker::HexPrint(FILE * file)
             ++temp;
         }
     }
-
+    postfill(file, temp);
 }
