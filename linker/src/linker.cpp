@@ -169,6 +169,20 @@ Linker::~Linker()
         delete files.back();
         files.pop_back();
     }
+    while (!sections.empty())
+    {
+        delete sections.back();
+        sections.pop_back();
+    }
+    while (!symtab.empty())
+    {
+        delete symtab.back();
+        symtab.pop_back();
+    }
+    
+    for (auto i: unresolved ) {
+        delete i.second;
+    }
 }
 
 void Linker::resolve(ELFFile *f)
