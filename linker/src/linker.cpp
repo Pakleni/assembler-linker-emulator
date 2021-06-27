@@ -230,7 +230,10 @@ void Linker::start(string out)
     {
         if (mode == Mode::hex)
         {
-            cout << "Theres still unresolved symbols!" << endl;
+            cout << "Theres still unresolved symbols:" << endl;
+            for(auto i: unresolved) {
+                cout << "\t" << i.second->label << endl; 
+            }
             exit(1);
         }
 
