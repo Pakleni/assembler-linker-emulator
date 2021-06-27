@@ -42,7 +42,7 @@ public:
 
     void insertIntoMemory(Section * sec, int place);
     void insertIntoMemory(Section * sec);
-    void HexPrint();
+    void HexPrint(FILE * file);
 
     std::list<Section *> memory;
     std::vector<SymTabEntry *> symtab;

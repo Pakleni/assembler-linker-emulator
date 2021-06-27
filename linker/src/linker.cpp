@@ -2,34 +2,42 @@
 #include "../../assembler/inc/printer.hpp"
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 using namespace std;
 
+void Linker::insertIntoMemory(Section *sec, int place)
+{
 
-void Linker::insertIntoMemory(Section * sec, int place) {
-
-    if (memory.size() == 0) {
+    if (memory.size() == 0)
+    {
         symtab[sec->id]->offset = place;
         memory.push_back(sec);
         return;
     }
 
-    for (auto i = memory.begin(); i != memory.end(); ++i) {
-        if (symtab[(*i)->id]->offset > place) {
-            Section * nx = (*i);
-            if (i != memory.begin()) {
-                Section * pr = (*(--i));
+    for (auto i = memory.begin(); i != memory.end(); ++i)
+    {
+        if (symtab[(*i)->id]->offset > place)
+        {
+            Section *nx = (*i);
+            if (i != memory.begin())
+            {
+                Section *pr = (*(--i));
 
                 if ((symtab[pr->id]->offset + pr->data.size() < place) &&
-                    (symtab[nx->id]->offset >= place + sec->data.size())) {
+                    (symtab[nx->id]->offset >= place + sec->data.size()))
+                {
 
                     symtab[sec->id]->offset = place;
                     memory.insert(++i, sec);
                     return;
                 }
             }
-            else {
-                if (symtab[nx->id]->offset >= place + sec->data.size()) {
+            else
+            {
+                if (symtab[nx->id]->offset >= place + sec->data.size())
+                {
                     symtab[sec->id]->offset = place;
                     memory.insert(i, sec);
                     return;
@@ -41,35 +49,42 @@ void Linker::insertIntoMemory(Section * sec, int place) {
         }
     }
 
-    Section * pr = *memory.rbegin();
-    if (symtab[pr->id]->offset + pr->data.size() < place) {
+    Section *pr = *memory.rbegin();
+    if (symtab[pr->id]->offset + pr->data.size() < place)
+    {
         symtab[sec->id]->offset = place;
         memory.push_back(sec);
         return;
     }
-    else {
+    else
+    {
         cout << "Some memory overlaps" << endl;
         exit(1);
     }
 }
 
-bool Linker::testInsertion (Section * sec, reverse_iterator<list<Section *>::iterator> i) {
-    if (i != memory.rbegin()) {
-        Section * pr = *i;
-        Section * nx = *(--i);
+bool Linker::testInsertion(Section *sec, reverse_iterator<list<Section *>::iterator> i)
+{
+    if (i != memory.rbegin())
+    {
+        Section *pr = *i;
+        Section *nx = *(--i);
 
         int place = symtab[nx->id]->offset - sec->data.size();
 
-        if (symtab[pr->id]->offset + pr->data.size() < place) {
+        if (symtab[pr->id]->offset + pr->data.size() < place)
+        {
             symtab[sec->id]->offset = place;
             memory.insert(i.base(), sec);
             return true;
         }
     }
-    else {
+    else
+    {
         int place = symtab[(*i)->id]->offset + (*i)->data.size();
 
-        if (place + sec->data.size() < 0xFF00) {
+        if (place + sec->data.size() < 0xFF00)
+        {
             symtab[sec->id]->offset = 0xFF00 - sec->data.size();
             memory.push_back(sec);
             return true;
@@ -79,11 +94,13 @@ bool Linker::testInsertion (Section * sec, reverse_iterator<list<Section *>::ite
     return false;
 }
 
-void Linker::insertIntoMemory(Section * sec) {
+void Linker::insertIntoMemory(Section *sec)
+{
 
     static reverse_iterator<list<Section *>::iterator> last = memory.rend();
-    
-    if (memory.size() == 0) {
+
+    if (memory.size() == 0)
+    {
         symtab[sec->id]->offset = 0xFF00 - sec->data.size();
         memory.push_back(sec);
         last = memory.rbegin();
@@ -92,16 +109,19 @@ void Linker::insertIntoMemory(Section * sec) {
 
     reverse_iterator<list<Section *>::iterator> temp = last;
 
-    for (;last != memory.rend(); ++last) {
-        if (testInsertion(sec, last)) {
+    for (; last != memory.rend(); ++last)
+    {
+        if (testInsertion(sec, last))
+        {
             ++last;
             return;
         }
     }
 
-
-    for (last = memory.rbegin(); last != temp; ++last) {
-        if (testInsertion(sec, last)) {
+    for (last = memory.rbegin(); last != temp; ++last)
+    {
+        if (testInsertion(sec, last))
+        {
             ++last;
             return;
         }
@@ -111,24 +131,29 @@ void Linker::insertIntoMemory(Section * sec) {
     exit(1);
 }
 
-void Linker::parsePlace(string s) {
+void Linker::parsePlace(string s)
+{
     auto i = s.find("=");
 
-    if (i == string::npos) { return; }
+    if (i == string::npos)
+    {
+        return;
+    }
 
-    string s_new = s.substr(i+1);
-    
+    string s_new = s.substr(i + 1);
+
     i = s_new.find("@");
 
-    if (i == string::npos) { 
+    if (i == string::npos)
+    {
         cout << "Error in -place: " << s << endl;
         return;
     }
 
     string s1 = s_new.substr(0, i);
-    string s2 = s_new.substr(i+1);
+    string s2 = s_new.substr(i + 1);
 
-    int x;   
+    int x;
     std::stringstream ss;
     ss << std::hex << s2;
     ss >> x;
@@ -136,7 +161,8 @@ void Linker::parsePlace(string s) {
     places.insert({s1, x});
 }
 
-Linker::~Linker() {
+Linker::~Linker()
+{
     while (!files.empty())
     {
         delete files.back();
@@ -144,22 +170,27 @@ Linker::~Linker() {
     }
 }
 
-void Linker::resolve(ELFFile * f) {
-    for (auto i: f->symtab) {
-        if (!i->isSection && !i->isLocal && i->section != EXTERNAL_SECTION) {
-            if (resolved.find(i->label) != resolved.end()) {
+void Linker::resolve(ELFFile *f)
+{
+    for (auto i : f->symtab)
+    {
+        if (!i->isSection && !i->isLocal && i->section != EXTERNAL_SECTION)
+        {
+            if (resolved.find(i->label) != resolved.end())
+            {
                 cout << "Symbol " << i->label << " defined more than once." << endl;
                 exit(1);
             }
 
-            SymTabEntry * add = new SymTabEntry(*i);
+            SymTabEntry *add = new SymTabEntry(*i);
             add->id = symtab.size();
 
             symtab.push_back(add);
             resolved.insert({i->label, {add, f}});
 
             auto pos = unresolved.find(i->label);
-            if (pos != unresolved.end()) {
+            if (pos != unresolved.end())
+            {
                 delete pos->second;
                 unresolved.erase(pos);
             }
@@ -167,51 +198,63 @@ void Linker::resolve(ELFFile * f) {
     }
 }
 
-void Linker::addUnresolved(ELFFile * f) {
-    for (auto i: f->symtab) {
-        if (i->section == EXTERNAL_SECTION) {
+void Linker::addUnresolved(ELFFile *f)
+{
+    for (auto i : f->symtab)
+    {
+        if (i->section == EXTERNAL_SECTION)
+        {
             unresolved.insert({i->label, new SymTabEntry(*i)});
         }
     }
 }
 
-void Linker::start(string out) {
-    if (mode == none) return;
+void Linker::start(string out)
+{
+    if (mode == none)
+        return;
 
-    for (auto i: sources) {
+    for (auto i : sources)
+    {
         parseFile(i);
     }
-    
-    for(ELFFile * f : files) {
+
+    for (ELFFile *f : files)
+    {
         //f-ovim defined, razresi unres slevo
         resolve(f);
         addUnresolved(f);
     }
-    if (unresolved.size() > 0) {
-        if (mode == Mode::hex) {
+    if (unresolved.size() > 0)
+    {
+        if (mode == Mode::hex)
+        {
             cout << "Theres still unresolved symbols!" << endl;
             exit(1);
         }
 
-        for (auto i: unresolved) {
+        for (auto i : unresolved)
+        {
             auto sym = i.second;
             sym->id = symtab.size();
             symtab.push_back(sym);
             resolved.insert({sym->label, {sym, nullptr}});
         }
-
     };
 
     //add all sections to sections and section_map and symtab
-    for (ELFFile * f : files) {
-        for(auto i: f->sections) {
+    for (ELFFile *f : files)
+    {
+        for (auto i : f->sections)
+        {
             auto sec = section_map.find(i->name);
 
-            Section * section;
+            Section *section;
 
-            if (sec == section_map.end()) {
+            if (sec == section_map.end())
+            {
                 //create entry for section
-                SymTabEntry * sect = new SymTabEntry(i->name, sections.size(), 0);
+                SymTabEntry *sect = new SymTabEntry(i->name, sections.size(), 0);
                 sect->isSection = true;
                 sect->id = symtab.size();
                 symtab.push_back(sect);
@@ -220,34 +263,38 @@ void Linker::start(string out) {
                 section = new Section(i->name, sect->id);
                 sections.push_back(section);
                 section_map.insert({section->name, section});
-
             }
-            else {
+            else
+            {
                 section = sec->second;
             }
 
             //offset of my section
             f->symtab[i->id]->offset = section->data.size();
 
-            for (auto d: i->data) {
+            for (auto d : i->data)
+            {
                 section->data.push_back(d);
             }
         }
     }
 
     //generate rel entries
-    for (ELFFile * f : files) {
-        for(auto i: f->sections) {
+    for (ELFFile *f : files)
+    {
+        for (auto i : f->sections)
+        {
             auto sec = section_map.find(i->name);
 
-            Section * section = sec->second;
+            Section *section = sec->second;
 
             int off = f->symtab[i->id]->offset;
 
-            for (auto r: i->rel) {
+            for (auto r : i->rel)
+            {
                 string name = f->symtab[r->entry]->label;
                 int id = resolved.find(name)->second.first->id;
-                RelEntry * rel = new RelEntry(r->offset + off, r->relType, id);
+                RelEntry *rel = new RelEntry(r->offset + off, r->relType, id);
 
                 section->rel.push_back(rel);
             }
@@ -255,13 +302,16 @@ void Linker::start(string out) {
     }
 
     //resolve multiple same sections
-    for (auto i: resolved) {
+    for (auto i : resolved)
+    {
 
         auto sym = i.second.first;
-        
-        if (sym->section != ABSOLUTE_SECTION) {
+
+        if (sym->section != ABSOLUTE_SECTION)
+        {
             auto f = i.second.second;
-            if (f == nullptr) continue; //sekcija je ili undef
+            if (f == nullptr)
+                continue; //sekcija je ili undef
             auto old_section = f->sections[sym->section];
             //append offset
             sym->offset += f->symtab[old_section->id]->offset;
@@ -270,86 +320,145 @@ void Linker::start(string out) {
         }
     }
 
-    if (mode == Mode::hex) {
+    if (mode == Mode::hex)
+    {
         //locations of sections
         list<Section *> not_in_memory;
 
-        for (auto s: sections) {
+        for (auto s : sections)
+        {
             auto c = places.find(s->name.substr(1));
-            if (c == places.end()) {
+            if (c == places.end())
+            {
                 not_in_memory.push_back(s);
             }
-            else {
+            else
+            {
                 insertIntoMemory(s, c->second);
             }
         }
 
-        while (!not_in_memory.empty()) {
+        while (!not_in_memory.empty())
+        {
             insertIntoMemory(not_in_memory.front());
             not_in_memory.pop_front();
         }
 
         // resolve rels
-        for(auto i: sections) {
+        for (auto i : sections)
+        {
             auto sec = section_map.find(i->name);
 
-            Section * section = sec->second;
+            Section *section = sec->second;
 
-            for (auto r: i->rel) {
+            for (auto r : i->rel)
+            {
                 uint16_t addend = i->data[r->offset] + (i->data[r->offset + 1] << 8);
-                
+
                 uint16_t res;
 
-                if (r->relType == RelEntry::R_PC16) {
+                if (r->relType == RelEntry::R_PC16)
+                {
                     uint16_t adr = symtab[i->id]->offset + r->offset;
 
                     res = ADDR(r->entry) + addend - adr;
                 }
-                else {
+                else
+                {
                     res = ADDR(r->entry) + addend;
                 }
                 i->data[r->offset] = res & 0x00ff;
                 i->data[r->offset + 1] = (res & 0xff00) >> 8;
-
             }
         }
     }
 
-
     output(out);
 }
 
-uint16_t Linker::ADDR(int entry) {
+uint16_t Linker::ADDR(int entry)
+{
     auto sym = symtab[entry];
 
-    if (sym->isSection) {
+    if (sym->isSection)
+    {
         return sym->offset;
     }
-    else {
+    else
+    {
         return symtab[sections[sym->section]->id]->offset + sym->offset;
     }
 }
 
-void Linker::parseFile(string name) {
-    ELFFile * elf = Reader(name).read();
+void Linker::parseFile(string name)
+{
+    ELFFile *elf = Reader(name).read();
     files.push_back(elf);
 }
 
-void Linker::output(string out) {
-    
-    if (mode == Mode::linkable) {
-        FILE * file = fopen(out.c_str(), "wb");
+void Linker::output(string out)
+{
+
+    FILE *file = fopen(out.c_str(), "wb");
+    if (mode == Mode::linkable)
+    {
         Printer(sections,
                 symtab,
-                file).Print();
-        fclose(file);
+                file)
+            .Print();
     }
-    else {
-        HexPrint();
+    else
+    {
+        HexPrint(file);
     }
-
+    fclose(file);
 }
 
-void Linker::HexPrint() {
+inline void prefill (FILE * file, int& temp) {
+    if ((temp % 8) == 0) return;
+
+    fprintf(file, "%.4X:", temp - temp%8);
+    for (int i = 0;i < (temp % 8);++i) {
+        fprintf(file, " 00");
+    }
+}
+
+inline void postfill (FILE * file, int& temp) {
+    if ((temp % 8) == 0) return;
+
+    for (;(temp % 8)!=0;++temp) {
+        fprintf(file, " 00");
+    }
+    fprintf(file, "\n");
+}
+
+void Linker::HexPrint(FILE * file)
+{
+
+    int temp = 0; 
+    for (auto i = memory.begin(); i != memory.end(); ++i)
+    {
+        
+        int curr = symtab[(*i)->id]->offset;
+
+        if (curr != temp) {
+            postfill(file, temp);
+            temp = curr;
+            prefill(file, curr);
+        }
+
+        for (int j = 0; j < (*i)->data.size(); ++j) {
+            if ((temp % 8) == 0) {
+                fprintf(file, "%.4X:", temp);
+            }
+
+            fprintf(file, " %.2X", (*i)->data[j]);
+
+            if ((temp % 8) == 7) {
+                fprintf(file, "\n");
+            }
+            ++temp;
+        }
+    }
 
 }
