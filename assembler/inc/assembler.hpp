@@ -61,8 +61,8 @@ public:
     void addDataB(uint8_t);
     void addDataW(uint16_t);
     void addData3B(uint32_t);
-    void addNonRelativeValue(std::string label);
-    void addRelativeValue(std::string label);
+    void addNonRelativeValue(std::string label, int offset);
+    void addRelativeValue(std::string label, int offset);
 
     //standalone instructions
     void push(int);

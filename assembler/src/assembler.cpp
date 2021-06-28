@@ -35,12 +35,12 @@ void Assembler::addData3B(uint32_t word)
     uint8_t l2 = (word & 0x0000FF00) >> 8;
     uint8_t l3 = word & 0x000000FF;
 
-    addDataB(l3);
-    addDataB(l2);
     addDataB(l1);
+    addDataB(l2);
+    addDataB(l3);
 }
 
-void Assembler::addNonRelativeValue(string label)
+void Assembler::addNonRelativeValue(string label, int offset)
 {
     auto s = SymMap.find(label);
     SymTabEntry *sym;
@@ -75,11 +75,11 @@ void Assembler::addNonRelativeValue(string label)
             id = Sections[sym->section]->id;
         }
 
-        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter, RelEntry::R_16, id));
+        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter + offset, RelEntry::R_16, id));
     }
 }
 
-void Assembler::addRelativeValue(string label)
+void Assembler::addRelativeValue(string label, int offset)
 {
     auto s = SymMap.find(label);
     SymTabEntry *sym;
@@ -121,7 +121,7 @@ void Assembler::addRelativeValue(string label)
             id = Sections[sym->section]->id;
         }
 
-        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter, RelEntry::R_PC16, id));
+        Sections[currentSection]->rel.push_back(new RelEntry(locationCounter + offset, RelEntry::R_PC16, id));
     }
 }
 
@@ -230,7 +230,7 @@ void Assembler::parseWord(IdentList *list)
         {
             debug("\tname: " + curr->val);
 
-            addNonRelativeValue(curr->val);
+            addNonRelativeValue(curr->val, 0);
 
             curr = curr->next;
             locationCounter += 2;
@@ -364,7 +364,11 @@ void Assembler::tworeg(uint8_t instr, uint8_t rd, uint8_t rs)
         debug("II TWOREG: " + to_string(instr) + ": " + to_string(rd) + ", " + to_string(rs));
 
         uint16_t code = (instr << 8) + (rd << 4) + rs;
-        addDataW(code);
+        uint8_t h = (code & 0xFF00) >> 8;
+        uint8_t l = code & 0x00FF;
+
+        addDataB(h);
+        addDataB(l);
     }
     locationCounter += 2;
 }
@@ -382,9 +386,8 @@ void Assembler::jmp(uint8_t instr, Operand *op)
         uint32_t code = (instr << 16) + op->calculate();
 
         addData3B(code);
-
-        //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
         locationCounter += 3;
+        op->add();
     }
     delete op;
 }
@@ -403,8 +406,8 @@ void Assembler::regop(uint8_t instr, uint8_t rd, Operand *op)
 
         addData3B(code);
 
-        //op calculate ce da upise u memoriju 2B i uveca location counter ako treba
         locationCounter += 3;
+        op->add();
     }
 
     delete op;

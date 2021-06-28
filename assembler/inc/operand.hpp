@@ -6,6 +6,7 @@ class Operand
 public:
     virtual uint16_t calculate() = 0;
     virtual int getSize() = 0;
+    virtual void add() = 0;
 };
 
 class SymOp : public Operand
@@ -32,6 +33,7 @@ public:
 
     uint16_t calculate();
     int getSize() { return 5; }
+    void add();
 };
 
 class LitOp : public Operand
@@ -51,6 +53,7 @@ public:
 
     uint16_t calculate();
     int getSize() { return 5; }
+    void add();
 };
 
 class RegOp : public Operand
@@ -68,6 +71,7 @@ public:
 
     uint16_t calculate();
     int getSize() { return 3; }
+    void add();
 };
 
 class RegLitOp : public Operand
@@ -80,6 +84,7 @@ public:
 
     uint16_t calculate();
     int getSize() { return 5; }
+    void add();
 };
 
 class RegSymOp : public Operand
@@ -92,4 +97,5 @@ public:
 
     uint16_t calculate();
     int getSize() { return 5; }
+    void add();
 };
