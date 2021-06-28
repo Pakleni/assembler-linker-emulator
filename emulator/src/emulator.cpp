@@ -1,5 +1,6 @@
 #include "../inc/emulator.hpp"
 #include <iostream>
+#include <termios.h>
 
 #define WORD(m, l) ((((uint16_t)m[l + 1]) << 8) + m[l])
 #define PC 7
@@ -46,9 +47,14 @@
 #define O (1 << 1)
 #define Z (1 << 0)
 
+#define term_out 0xFF00
+#define term_in 0xFF02
+
+#define tim_cfg 0xFF10
+
 using namespace std;
 
-inline void set_mem16(uint8_t m[], uint8_t loc, uint16_t val)
+inline void set_mem16(uint8_t m[], uint16_t loc, uint16_t val)
 {
     m[loc] = val & 0x00FF;
     m[loc + 1] = (val & 0xFF00) >> 8;
@@ -85,8 +91,6 @@ void Emulator::readHex(string in)
 bool Emulator::parseInstruction()
 {
     uint8_t ID = memory[regs[PC]++];
-
-    cout << hex << (int)ID << endl;
 
     switch (ID)
     {
@@ -153,6 +157,7 @@ bool Emulator::parseInstruction()
     uint8_t am = AM & 0x0F;
     uint8_t up = (AM & 0xF0) >> 4;
 
+
     uint16_t operand = 0;
     uint8_t rs = RD & 0x0F;
     if (am == REGDIR || am == REGIND)
@@ -203,9 +208,10 @@ bool Emulator::parseInstruction()
 
         if (ID == STR)
         {
-            if (am = IMM) {
-                cerr << "Error: Store + imm" << endl;
-                exit(1);
+            if (am = IMM)
+            {
+                error();
+                return true;
             }
             store(RD, am, up, data);
             return true;
@@ -238,7 +244,25 @@ bool Emulator::parseInstruction()
         }
         else if (am == REGDIRADD)
         {
+            switch (up)
+            {
+            case (1):
+                regs[rs] -= 2;
+                break;
+            case (2):
+                regs[rs] += 2;
+                break;
+            }
             operand = regs[rs] + data;
+            switch (up)
+            {
+            case (3):
+                regs[rs] -= 2;
+                break;
+            case (4):
+                regs[rs] += 2;
+                break;
+            }
         }
         else if (am == IMM)
         {
@@ -272,27 +296,117 @@ bool Emulator::parseInstruction()
         return true;
     }
 
-    cerr << "Error: Unrecognized instruction" << endl;
-    exit(1);
+    error();
+    return true;
+}
+
+void Emulator::timerFunction()
+{
+    int time;
+    uint16_t temp;
+
+    while (isRunning)
+    {
+        memory_mutex.lock();
+        temp = WORD(memory, tim_cfg);
+        memory_mutex.unlock();
+
+        switch (temp)
+        {
+        case (0):
+            time = 500;
+            break;
+        case (1):
+            time = 1000;
+            break;
+        case (2):
+            time = 1500;
+            break;
+        case (3):
+            time = 2000;
+            break;
+        case (4):
+            time = 5000;
+            break;
+        case (5):
+            time = 10000;
+            break;
+        case (6):
+            time = 30000;
+            break;
+        case (7):
+            time = 50000;
+            break;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(time));
+        timer = true;
+    }
 }
 
 void Emulator::start(string in)
 {
+    isRunning = true;
     readHex(in);
     uint8_t *ep;
     regs[PC] = WORD(memory, 0);
+    set_mem16(memory, tim_cfg, 0);
+
+    thread t([]
+             { Emulator::getInstance().timerFunction(); });
+    t.detach();
 
     while (parseInstruction())
-        ;
+    {
+
+        if (!(regs[PSW] & I))
+        {
+            if (!(regs[PSW] & Tr) && timer)
+            {
+                timer = false;
+                timerInterrupt();
+            }
+            if (!(regs[PSW] & Tl) && terminal)
+            {
+                terminal = false;
+                terminalInterrupt();
+            }
+        }
+
+    }
+
+    isRunning = false;
 }
 
 Emulator::~Emulator()
 {
 }
 
+void Emulator::error()
+{
+    push(PC);
+    push(PSW);
+    regs[PC] = WORD(memory, 1 * 2);
+}
+
+void Emulator::timerInterrupt()
+{
+    push(PC);
+    push(PSW);
+    regs[PC] = WORD(memory, 2 * 2);
+}
+
+void Emulator::terminalInterrupt()
+{
+    push(PC);
+    push(PSW);
+    regs[PC] = WORD(memory, 3 * 2);
+}
+
 void Emulator::interrupt(uint8_t RD)
 {
     uint8_t rd = get_rd(RD);
+    push(PC);
     push(PSW);
 
     regs[PC] = WORD(memory, (regs[rd] % 8) * 2);
@@ -397,34 +511,33 @@ void Emulator::cmp(uint8_t RD)
         regs[PSW] &= ~N;
     }
 
-    if (regs[get_rd(RD)] < regs[get_rs(RD)]) {
+    if (regs[get_rd(RD)] < regs[get_rs(RD)])
+    {
         regs[PSW] |= C;
     }
-    else {
+    else
+    {
         regs[PSW] &= ~C;
     }
 
     if (((int16_t)regs[get_rd(RD)] < 0 &&
-        (int16_t)regs[get_rs(RD)] > 0 &&
-        temp > 0)||
+         (int16_t)regs[get_rs(RD)] > 0 &&
+         temp > 0) ||
         ((int16_t)regs[get_rd(RD)] > 0 &&
-        (int16_t)regs[get_rs(RD)] < 0 &&
-        temp < 0)
-        )
+         (int16_t)regs[get_rs(RD)] < 0 &&
+         temp < 0))
     {
         regs[PSW] |= O;
     }
     else
     {
         regs[PSW] &= ~O;
-
     }
 }
 
 void Emulator::i_not(uint8_t RD)
 {
     regs[get_rd(RD)] = ~regs[get_rd(RD)];
-    
 }
 
 void Emulator::i_and(uint8_t RD)
@@ -446,16 +559,20 @@ void Emulator::i_test(uint8_t RD)
 {
     int16_t temp = regs[get_rd(RD)] & regs[get_rs(RD)];
 
-    if (temp == 0) {
+    if (temp == 0)
+    {
         regs[PSW] |= Z;
         regs[PSW] &= ~N;
     }
-    else {
+    else
+    {
         regs[PSW] &= ~Z;
-        if (temp < 0) {
+        if (temp < 0)
+        {
             regs[PSW] |= N;
         }
-        else {
+        else
+        {
             regs[PSW] &= ~N;
         }
     }
@@ -481,11 +598,35 @@ void Emulator::store(uint8_t RD, uint8_t am, uint8_t up)
     uint8_t rd = get_rd(RD);
     uint8_t rs = get_rs(RD);
 
-    if (am == REGDIR) {
+    if (am == REGDIR)
+    {
         regs[rs] = regs[rd];
     }
-    else if (am == REGIND) {
+    else if (am == REGIND)
+    {
+        switch (up)
+        {
+        case (1):
+            regs[rs] -= 2;
+            break;
+        case (2):
+            regs[rs] += 2;
+            break;
+        }
+
+        memory_mutex.lock();
         set_mem16(memory, regs[rs], regs[rd]);
+        memory_mutex.unlock();
+
+        switch (up)
+        {
+        case (3):
+            regs[rs] -= 2;
+            break;
+        case (4):
+            regs[rs] += 2;
+            break;
+        }
     }
 }
 
@@ -494,22 +635,50 @@ void Emulator::store(uint8_t RD, uint8_t am, uint8_t up, uint16_t data)
     uint8_t rd = get_rd(RD);
     uint8_t rs = get_rs(RD);
 
-    if (am == REGDIRADD) {
-        cerr << "Error: Store + regdiradd" << endl;
-        exit(1);
+    if (am == REGDIRADD)
+    {
+        error();
     }
-    else if (am == REGINDADD) {
+    else if (am == REGINDADD)
+    {
+        switch (up)
+        {
+        case (1):
+            regs[rs] -= 2;
+            break;
+        case (2):
+            regs[rs] += 2;
+            break;
+        }
+        
+        memory_mutex.lock();
         set_mem16(memory, regs[rs] + data, regs[rd]);
+        memory_mutex.unlock();
+
+        switch (up)
+        {
+        case (3):
+            regs[rs] -= 2;
+            break;
+        case (4):
+            regs[rs] += 2;
+            break;
+        }
     }
-    else if (am == MEMDIR) {
+    else if (am == MEMDIR)
+    {
+        memory_mutex.lock();
         set_mem16(memory, data, regs[rd]);
+        memory_mutex.unlock();
     }
 }
 
 void Emulator::push(uint8_t reg)
 {
     regs[SP] -= 2;
+    memory_mutex.lock();
     set_mem16(memory, regs[SP], regs[reg]);
+    memory_mutex.unlock();
 }
 
 void Emulator::pop(uint8_t reg)

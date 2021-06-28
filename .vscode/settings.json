@@ -51,6 +51,7 @@
         "bitset": "cpp",
         "set": "cpp",
         "unordered_set": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "chrono": "cpp"
     }
 }

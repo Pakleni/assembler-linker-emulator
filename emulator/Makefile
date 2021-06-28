@@ -1,7 +1,7 @@
 SRCS = src/main.cpp src/emulator.cpp
 
 all:
-	g++ $(SRCS) -o out/emulator
+	g++  -pthread -o out/emulator $(SRCS)
 
 test:
 	make all

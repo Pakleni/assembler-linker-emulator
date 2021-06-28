@@ -1,4 +1,7 @@
 #include <string>
+#include <thread>
+#include <mutex>
+
 
 class Emulator {
     Emulator(){};
@@ -58,4 +61,14 @@ public:
     void store(uint8_t RD, uint8_t am, uint8_t up);
     void store(uint8_t RD, uint8_t am, uint8_t up, uint16_t data);
 
+    void error();
+    void timerInterrupt();
+    void terminalInterrupt();
+    void timerFunction();
+
+    std::mutex memory_mutex;
+
+    volatile bool timer = false;
+    volatile bool terminal = false;
+    volatile bool isRunning = false;
 };
