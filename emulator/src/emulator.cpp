@@ -1,6 +1,6 @@
 #include "../inc/emulator.hpp"
 #include <iostream>
-#include <termios.h>
+#include "../inc/terminal.hpp"
 
 #define WORD(m, l) ((((uint16_t)m[l + 1]) << 8) + m[l])
 #define PC 7
@@ -54,10 +54,18 @@
 
 using namespace std;
 
-inline void set_mem16(uint8_t m[], uint16_t loc, uint16_t val)
+inline void set_mem16(uint16_t loc, uint16_t val)
 {
+    if (loc == term_out) {
+        cout << (char) val << endl;
+    }
+
+    uint8_t *m = Emulator::getInstance().memory;
+
+    Emulator::getInstance().memory_mutex.lock();
     m[loc] = val & 0x00FF;
     m[loc + 1] = (val & 0xFF00) >> 8;
+    Emulator::getInstance().memory_mutex.unlock();
 }
 
 inline uint8_t get_rd(uint8_t RD)
@@ -90,6 +98,7 @@ void Emulator::readHex(string in)
 
 bool Emulator::parseInstruction()
 {
+
     uint8_t ID = memory[regs[PC]++];
 
     switch (ID)
@@ -157,8 +166,7 @@ bool Emulator::parseInstruction()
     uint8_t am = AM & 0x0F;
     uint8_t up = (AM & 0xF0) >> 4;
 
-
-    uint16_t operand = 0;
+    int16_t operand = 0;
     uint8_t rs = RD & 0x0F;
     if (am == REGDIR || am == REGIND)
     {
@@ -204,11 +212,11 @@ bool Emulator::parseInstruction()
         uint8_t DH = memory[regs[PC]++];
         uint8_t DL = memory[regs[PC]++];
 
-        uint16_t data = (DL << 8) + DH;
+        int16_t data = (DL << 8) + DH;
 
         if (ID == STR)
         {
-            if (am = IMM)
+            if (am == IMM)
             {
                 error();
                 return true;
@@ -216,6 +224,7 @@ bool Emulator::parseInstruction()
             store(RD, am, up, data);
             return true;
         }
+
 
         if (am == REGINDADD)
         {
@@ -270,7 +279,7 @@ bool Emulator::parseInstruction()
         }
         else if (am == MEMDIR)
         {
-            operand = WORD(memory, data);
+            operand = WORD(memory, (uint16_t) data);
         }
     }
 
@@ -344,21 +353,49 @@ void Emulator::timerFunction()
     }
 }
 
+void initTimer() {
+    thread t([]
+             { Emulator::getInstance().timerFunction(); });
+    t.detach();
+}
+
+void initTerminal() {
+    thread terminal( [] {
+        char c;
+
+        if (terminal_init())
+        {
+            cerr <<  "Terminal error" << endl;
+            exit(1);
+        }
+
+        while (((c = getc(stdin)) != EOF) && Emulator::getInstance().isRunning )
+        {
+            Emulator::getInstance().terminalFunction(c);
+        }
+    } );
+    terminal.detach();
+}
+
+void Emulator::terminalFunction(char c) {
+    set_mem16(term_in, c);
+    terminal = true;
+}
+
 void Emulator::start(string in)
 {
     isRunning = true;
     readHex(in);
     uint8_t *ep;
+    regs[SP] = 0x1234;
     regs[PC] = WORD(memory, 0);
-    set_mem16(memory, tim_cfg, 0);
+    set_mem16(tim_cfg, 0);
 
-    thread t([]
-             { Emulator::getInstance().timerFunction(); });
-    t.detach();
+    initTimer();
+    initTerminal();
 
     while (parseInstruction())
     {
-
         if (!(regs[PSW] & I))
         {
             if (!(regs[PSW] & Tr) && timer)
@@ -614,9 +651,7 @@ void Emulator::store(uint8_t RD, uint8_t am, uint8_t up)
             break;
         }
 
-        memory_mutex.lock();
-        set_mem16(memory, regs[rs], regs[rd]);
-        memory_mutex.unlock();
+        set_mem16(regs[rs], regs[rd]);
 
         switch (up)
         {
@@ -651,9 +686,7 @@ void Emulator::store(uint8_t RD, uint8_t am, uint8_t up, uint16_t data)
             break;
         }
         
-        memory_mutex.lock();
-        set_mem16(memory, regs[rs] + data, regs[rd]);
-        memory_mutex.unlock();
+        set_mem16(regs[rs] + data, regs[rd]);
 
         switch (up)
         {
@@ -667,18 +700,14 @@ void Emulator::store(uint8_t RD, uint8_t am, uint8_t up, uint16_t data)
     }
     else if (am == MEMDIR)
     {
-        memory_mutex.lock();
-        set_mem16(memory, data, regs[rd]);
-        memory_mutex.unlock();
+        set_mem16(data, regs[rd]);
     }
 }
 
 void Emulator::push(uint8_t reg)
 {
     regs[SP] -= 2;
-    memory_mutex.lock();
-    set_mem16(memory, regs[SP], regs[reg]);
-    memory_mutex.unlock();
+    set_mem16(regs[SP], regs[reg]);
 }
 
 void Emulator::pop(uint8_t reg)

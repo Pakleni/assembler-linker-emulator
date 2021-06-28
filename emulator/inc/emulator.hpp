@@ -65,6 +65,7 @@ public:
     void timerInterrupt();
     void terminalInterrupt();
     void timerFunction();
+    void terminalFunction(char c);
 
     std::mutex memory_mutex;
 

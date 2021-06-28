@@ -52,6 +52,7 @@
         "set": "cpp",
         "unordered_set": "cpp",
         "list": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "thread": "cpp"
     }
 }
