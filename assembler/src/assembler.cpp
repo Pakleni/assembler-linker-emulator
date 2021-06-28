@@ -105,19 +105,19 @@ void Assembler::addRelativeValue(string label, int offset)
     }
     else if (sym->section == currentSection)
     {
-        addDataW(sym->offset - locationCounter - 5); //relative jump
+        addDataW(sym->offset - locationCounter - 2); //relative jump
     }
     else
     {
 
         if (!sym->isLocal)
         {
-            addDataW(-5);
+            addDataW(-2);
             id = sym->id;
         }
         else
         {
-            addDataW(sym->offset - 5); //addend
+            addDataW(sym->offset - 2); //addend
             id = Sections[sym->section]->id;
         }
 

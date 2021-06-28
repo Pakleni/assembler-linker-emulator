@@ -70,12 +70,12 @@ inline void set_mem16(uint16_t loc, uint16_t val)
 
 inline uint8_t get_rd(uint8_t RD)
 {
-    return (RD & 0x0F) >> 4;
+    return (RD & 0xF0) >> 4;
 }
 
 inline uint8_t get_rs(uint8_t RD)
 {
-    return (RD & 0xF);
+    return (RD & 0x0F);
 }
 
 void Emulator::readHex(string in)
