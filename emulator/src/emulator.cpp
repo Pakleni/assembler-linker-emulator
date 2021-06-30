@@ -363,7 +363,7 @@ void initTerminal() {
     thread terminal( [] {
         char c;
 
-        if (terminal_init())
+        if (Terminal::getInstance().terminal_init())
         {
             cerr <<  "Terminal error" << endl;
             exit(1);
