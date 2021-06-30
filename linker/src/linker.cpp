@@ -6,8 +6,16 @@
 
 using namespace std;
 
+#define MEM_MAP 0xFF00
+#define STACK_SIZE 0x1000
+
 void Linker::insertIntoMemory(Section *sec, int place)
 {
+
+    if (place + sec->data.size() > (MEM_MAP - STACK_SIZE)) {
+        cout << "Section " << sec->name << " overlaps with stack/memory mapped registers" << endl;
+        exit(1);
+    }
 
     if (memory.size() == 0)
     {
@@ -84,7 +92,7 @@ bool Linker::testInsertion(Section *sec, std::_List_iterator<Section *> &i)
     {
         Section *pr = *(i);
 
-        uint16_t place = 0xFF00 - sec->data.size();
+        uint16_t place = MEM_MAP - STACK_SIZE - sec->data.size();
 
         if (symtab[pr->id]->offset + pr->data.size() <= place)
         {
@@ -104,7 +112,7 @@ void Linker::insertIntoMemory(Section *sec)
 
     if (memory.size() == 0)
     {
-        symtab[sec->id]->offset = 0xFF00 - sec->data.size();
+        symtab[sec->id]->offset = MEM_MAP - STACK_SIZE - sec->data.size();
         memory.push_back(sec);
         last = --memory.end();
         return;

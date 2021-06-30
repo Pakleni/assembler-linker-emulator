@@ -387,7 +387,7 @@ void Emulator::start(string in)
     isRunning = true;
     readHex(in);
     uint8_t *ep;
-    regs[SP] = 0x1234;
+    regs[SP] = 0xFF00;
     regs[PC] = WORD(memory, 0);
     set_mem16(tim_cfg, 0);
 
